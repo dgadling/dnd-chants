@@ -17,6 +17,8 @@ type RowExtra = {
   box: string;
   saving: boolean;
   status: string;
+  justSaved?: boolean;
+  saveFailed?: boolean;
 };
 
 type DdbLink = {
@@ -292,15 +294,23 @@ export default function LabPage() {
   }, [extras, spellsArr, activeTargetLang, setRow]);
 
   const onTrySave = useCallback(async (spellName: string) => {
-    const row = extras[spellName] ?? { englishPhrase: "", box: "", saving: false, status: "" };
-    setRow(spellName, { saving: true, status: "save..." });
+    const row = extras[spellName] ?? { englishPhrase: "", box: "", saving: false, status: "", justSaved: false, saveFailed: false };
+    if (!row.box.trim()) {
+      setRow(spellName, { status: "Translate first", justSaved: false, saveFailed: false });
+      setTimeout(() => setRow(spellName, { status: "" }), 2000);
+      return;
+    }
+    setRow(spellName, { saving: true, status: "Saving locally...", justSaved: false, saveFailed: false });
     try {
       const { native, roman } = parseBox(row.box);
       if (!native) throw new Error("Translate first");
-      setRow(spellName, { saving: false, status: `saved ${native.slice(0, 12)}${roman ? " [" + roman.slice(0, 10) + "]" : ""}` });
-      setTimeout(() => setRow(spellName, { status: "" }), 1800);
+      // Local-only save: persists to localStorage via extras useEffect, not server
+      // Clarify local-only, show justSaved ✓ 2s like Space
+      setRow(spellName, { saving: false, justSaved: true, saveFailed: false, status: `✓ saved locally ${native.slice(0, 12)}${roman ? " [" + roman.slice(0, 10) + "]" : ""}` });
+      setTimeout(() => setRow(spellName, { status: "", justSaved: false }), 2000);
     } catch (e: any) {
-      setRow(spellName, { saving: false, status: `err ${String(e?.message || e).slice(0, 70)}` });
+      setRow(spellName, { saving: false, justSaved: false, saveFailed: true, status: `failed ${String(e?.message || e).slice(0, 70)}` });
+      setTimeout(() => setRow(spellName, { status: "", saveFailed: false }), 3000);
     }
   }, [extras, setRow]);
 
@@ -427,6 +437,8 @@ export default function LabPage() {
                 targetLang={activeTargetLang}
                 status={row.status}
                 saving={row.saving}
+                justSaved={row.justSaved}
+                saveFailed={row.saveFailed}
                 onEnglishChange={(v) => setRow(sp.name, { englishPhrase: v })}
                 onBoxChange={(v) => setRow(sp.name, { box: v })}
                 onTranslate={() => onTranslate(sp.name)}
@@ -455,6 +467,9 @@ export default function LabPage() {
                 box={row.box}
                 targetLang={activeTargetLang}
                 status={row.status}
+                justSaved={row.justSaved}
+                saveFailed={row.saveFailed}
+                saving={row.saving}
                 onEnglishChange={(v) => setRow(sp.name, { englishPhrase: v })}
                 onBoxChange={(v) => setRow(sp.name, { box: v })}
                 onTranslate={() => onTranslate(sp.name)}
