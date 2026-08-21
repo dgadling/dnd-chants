@@ -11,6 +11,17 @@ export const SCHOOLS = [
 
 export type School = (typeof SCHOOLS)[number];
 
+export const SCHOOL_DEFAULTS: Record<School, string> = {
+  Abjuration: "iw",
+  Conjuration: "is",
+  Divination: "hi",
+  Enchantment: "it",
+  Evocation: "ru",
+  Illusion: "ar",
+  Necromancy: "la",
+  Transmutation: "de",
+};
+
 export const LANG_OPTIONS: { code: string; label: string }[] = [
   { code: "af", label: "Afrikaans" },
   { code: "sq", label: "Albanian" },

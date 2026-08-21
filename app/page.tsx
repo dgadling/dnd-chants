@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { SCHOOLS, getLangName, formatBox, parseBox } from "@/lib/lang";
+import { SCHOOLS, SCHOOL_DEFAULTS, LANG_OPTIONS, getLangName, getLangOptionDisplay, formatBox, parseBox } from "@/lib/lang";
 import type { School } from "@/lib/lang";
 import { DesktopRow } from "@/components/DesktopRow";
 import { MobileCard } from "@/components/MobileCard";
@@ -13,7 +13,6 @@ type Spell = {
 
 type RowExtra = {
   box: string;
-  targetLang: string;
   saving: boolean;
   status: string;
 };
@@ -28,6 +27,7 @@ type DdbLink = {
 
 const STORAGE_LINK = "dnd-chant-ddb-link-v1";
 const STORAGE_EXTRAS = "dnd-chant-extras-v1";
+const STORAGE_SCHOOL_LANGS = "dnd-chant-school-langs-v1";
 const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
 
 function useIsMobile(breakpoint = 880) {
@@ -99,13 +99,39 @@ export default function LabPage() {
   const [activeSchool, setActiveSchool] = useState<School>("Evocation");
   const [extras, setExtras] = useState<Record<string, RowExtra>>({});
 
-  // Load extras from localStorage on mount
+  // Per-school language, initialized with defaults, persisted
+  const [schoolLangs, setSchoolLangs] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    for (const s of SCHOOLS) {
+      init[s] = SCHOOL_DEFAULTS[s as School] || "en";
+    }
+    return init;
+  });
+
+  // Load extras and schoolLangs from localStorage on mount
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_EXTRAS);
       if (raw) {
         const parsed = JSON.parse(raw) as Record<string, RowExtra>;
-        setExtras(parsed);
+        // Migrate old entries that had targetLang
+        const cleaned: Record<string, RowExtra> = {};
+        for (const [k, v] of Object.entries(parsed)) {
+          const { box, saving, status } = v as any;
+          cleaned[k] = {
+            box: typeof box === "string" ? box : "",
+            saving: !!saving,
+            status: typeof status === "string" ? status : "",
+          };
+        }
+        setExtras(cleaned);
+      }
+    } catch {}
+    try {
+      const rawL = localStorage.getItem(STORAGE_SCHOOL_LANGS);
+      if (rawL) {
+        const parsed = JSON.parse(rawL) as Record<string, string>;
+        setSchoolLangs((prev) => ({ ...prev, ...parsed }));
       }
     } catch {}
   }, []);
@@ -117,18 +143,25 @@ export default function LabPage() {
     } catch {}
   }, [extras]);
 
+  // Persist schoolLangs
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_SCHOOL_LANGS, JSON.stringify(schoolLangs));
+    } catch {}
+  }, [schoolLangs]);
+
   const ensureRow = useCallback(
-    (spellName: string, extrasMap: Record<string, RowExtra> = extras): RowExtra => {
-      const existing = extrasMap[spellName];
+    (spellName: string): RowExtra => {
+      const existing = extras[spellName];
       if (existing) return existing;
-      return { box: "", targetLang: "en", saving: false, status: "" };
+      return { box: "", saving: false, status: "" };
     },
     [extras]
   );
 
   const setRow = (name: string, patch: Partial<RowExtra>) => {
     setExtras((prev) => {
-      const cur = prev[name] ?? { box: "", targetLang: "en", saving: false, status: "" };
+      const cur = prev[name] ?? { box: "", saving: false, status: "" };
       const nextRow = { ...cur, ...patch };
       return { ...prev, [name]: nextRow };
     });
@@ -235,8 +268,10 @@ export default function LabPage() {
     void fetchCharacter(characterId);
   };
 
+  const activeTargetLang = schoolLangs[activeSchool] || SCHOOL_DEFAULTS[activeSchool as School] || "en";
+
   const onTranslate = async (name: string) => {
-    const row = extras[name] ?? { box: "", targetLang: "en", saving: false, status: "" };
+    const row = extras[name] ?? { box: "", saving: false, status: "" };
     const sp = spellsArr.find((x) => x.name === name);
     if (!sp) return;
     setRow(name, { saving: false, status: "translate..." });
@@ -244,7 +279,7 @@ export default function LabPage() {
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: sp.name, source: "en", target: row.targetLang }),
+        body: JSON.stringify({ text: sp.name, source: "en", target: activeTargetLang }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j?.error || res.statusText);
@@ -259,7 +294,7 @@ export default function LabPage() {
   };
 
   const onTrySave = async (name: string) => {
-    const row = extras[name] ?? { box: "", targetLang: "en", saving: false, status: "" };
+    const row = extras[name] ?? { box: "", saving: false, status: "" };
     setRow(name, { saving: true, status: "save..." });
     try {
       const { native, roman } = parseBox(row.box);
@@ -272,6 +307,25 @@ export default function LabPage() {
 
   const totalVerbal = spellsArr.length;
   const activeSpells = grouped[activeSchool] || [];
+
+  const handleAudio = useCallback((spellName: string) => {
+    const row = extras[spellName] ?? { box: "", saving: false, status: "" };
+    const { native } = parseBox(row.box);
+    const t = native.trim();
+    if (!t) return;
+    const tl = activeTargetLang;
+    const url = `/api/tts?text=${encodeURIComponent(t)}&target=${encodeURIComponent(tl)}`;
+    const a = new Audio(url);
+    a.play().catch(() => {});
+  }, [extras, activeTargetLang]);
+
+  const handleIdiom = useCallback((spellName: string) => {
+    const row = extras[spellName] ?? { box: "", saving: false, status: "" };
+    const sp = spellsArr.find((x) => x.name === spellName);
+    const langName = getLangName(activeTargetLang);
+    const tryText = (parseBox(row.box).native || sp?.name || spellName).trim();
+    window.open("https://www.google.com/search?q=" + encodeURIComponent(`idiom in ${langName} for "${tryText}"`), "_blank");
+  }, [extras, spellsArr, activeTargetLang]);
 
   return (
     <div className="space-y-6">
@@ -322,19 +376,42 @@ export default function LabPage() {
         {linkStatus ? <div className="text-xs text-amber-200">{linkStatus}</div> : null}
       </div>
 
-      <div className="flex flex-wrap gap-2 items-center justify-between">
-        <div className="flex flex-wrap gap-1">
-          {SCHOOLS.map((s) => (
-            <button
-              key={s}
-              onClick={() => setActiveSchool(s as School)}
-              className={`btn ${activeSchool === s ? "" : "btn-ghost"} text-sm`}
-            >
-              {s} {grouped[s]?.length ? `· ${grouped[s].length}` : ""}
-            </button>
-          ))}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap gap-2 items-center justify-between">
+          <div className="flex flex-wrap gap-1">
+            {SCHOOLS.map((s) => (
+              <button
+                key={s}
+                onClick={() => setActiveSchool(s as School)}
+                className={`btn ${activeSchool === s ? "" : "btn-ghost"} text-sm`}
+              >
+                {s} {grouped[s]?.length ? `· ${grouped[s].length}` : ""}
+              </button>
+            ))}
+          </div>
+          <div className="text-xs text-[var(--dim)]">{totalVerbal} spells</div>
         </div>
-        <div className="text-xs text-[var(--dim)]">{totalVerbal} spells</div>
+
+        {/* Per-school language selector - one only, fixes DOM bloat */}
+        {totalVerbal > 0 ? (
+          <div className="flex items-center gap-2 text-sm card px-3 py-2">
+            <div className="text-xs text-[var(--dim)] whitespace-nowrap">
+              {activeSchool} → {getLangName(activeTargetLang)}
+            </div>
+            <select
+              className="input text-sm flex-1 max-w-[280px]"
+              value={activeTargetLang}
+              onChange={(e) => setSchoolLangs((prev) => ({ ...prev, [activeSchool]: e.target.value }))}
+            >
+              {LANG_OPTIONS.map((o) => (
+                <option key={o.code} value={o.code}>{getLangOptionDisplay(o)}</option>
+              ))}
+            </select>
+            <div className="text-[11px] text-[var(--dim)] hidden sm:block">
+              111 options once, not per row
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {totalVerbal === 0 ? (
@@ -348,34 +425,21 @@ export default function LabPage() {
       ) : isMobile ? (
         <div className="grid grid-cols-1 gap-3">
           {activeSpells.map((sp) => {
-            const row = extras[sp.name] ?? ensureRow(sp.name, extras);
+            const row = extras[sp.name] ?? ensureRow(sp.name);
             return (
               <MobileCard
                 key={sp.name}
                 spellName={sp.name}
                 school={sp.school}
                 box={row.box}
-                targetLang={row.targetLang}
+                targetLang={activeTargetLang}
                 status={row.status}
                 saving={row.saving}
                 onBoxChange={(v) => setRow(sp.name, { box: v })}
-                onLangChange={(v) => setRow(sp.name, { targetLang: v })}
                 onTranslate={() => onTranslate(sp.name)}
                 onTrySave={() => onTrySave(sp.name)}
-                onAudio={() => {
-                  const { native } = parseBox(row.box);
-                  const t = native.trim();
-                  if (!t) return;
-                  const tl = row.targetLang;
-                  const url = `/api/tts?text=${encodeURIComponent(t)}&target=${encodeURIComponent(tl)}`;
-                  const a = new Audio(url);
-                  a.play().catch(() => {});
-                }}
-                onIdiom={() => {
-                  const langName = getLangName(row.targetLang);
-                  const tryText = (parseBox(row.box).native || sp.name).trim();
-                  window.open("https://www.google.com/search?q=" + encodeURIComponent(`idiom in ${langName} for "${tryText}"`), "_blank");
-                }}
+                onAudio={() => handleAudio(sp.name)}
+                onIdiom={() => handleIdiom(sp.name)}
               />
             );
           })}
@@ -385,36 +449,23 @@ export default function LabPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          <div className="hidden md:grid grid-cols-[160px_1fr_260px_92px] gap-2 px-2 text-[11px] text-[var(--dim)] uppercase tracking-wide">
-            <div>Spell</div><div>Chant box</div><div>Translate</div><div>Actions</div>
+          <div className="hidden md:grid grid-cols-[200px_1fr_140px] gap-3 px-3 text-[11px] text-[var(--dim)] uppercase tracking-wide">
+            <div>Spell</div><div>Chant box</div><div>Actions</div>
           </div>
           {activeSpells.map((sp) => {
-            const row = extras[sp.name] ?? ensureRow(sp.name, extras);
+            const row = extras[sp.name] ?? ensureRow(sp.name);
             return (
               <DesktopRow
                 key={sp.name}
                 spellName={sp.name}
                 box={row.box}
-                targetLang={row.targetLang}
+                targetLang={activeTargetLang}
                 status={row.status}
                 onBoxChange={(v) => setRow(sp.name, { box: v })}
-                onLangChange={(v) => setRow(sp.name, { targetLang: v })}
                 onTranslate={() => onTranslate(sp.name)}
                 onTrySave={() => onTrySave(sp.name)}
-                onAudio={() => {
-                  const { native } = parseBox(row.box);
-                  const t = native.trim();
-                  if (!t) return;
-                  const tl = row.targetLang;
-                  const url = `/api/tts?text=${encodeURIComponent(t)}&target=${encodeURIComponent(tl)}`;
-                  const a = new Audio(url);
-                  a.play().catch(() => {});
-                }}
-                onIdiom={() => {
-                  const langName = getLangName(row.targetLang);
-                  const tryText = (parseBox(row.box).native || sp.name).trim();
-                  window.open("https://www.google.com/search?q=" + encodeURIComponent(`idiom in ${langName} for "${tryText}"`), "_blank");
-                }}
+                onAudio={() => handleAudio(sp.name)}
+                onIdiom={() => handleIdiom(sp.name)}
               />
             );
           })}
