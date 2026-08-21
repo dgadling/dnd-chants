@@ -2,15 +2,12 @@
 
 type Props = {
   spellName: string;
-  isJex: boolean;
-  chantLiteral: string;
   box: string;
   targetLang: string;
   status: string;
   onBoxChange: (v: string) => void;
   onLangChange: (v: string) => void;
   onTranslate: () => void;
-  onTry: () => void;
   onTrySave: () => void;
   onAudio: () => void;
   onIdiom: () => void;
@@ -26,10 +23,6 @@ export function DesktopRow(props: Props) {
           <div className="text-sm font-semibold truncate" title={props.spellName}>
             {props.spellName}
           </div>
-          {props.isJex ? <span className="badge-jex">★ JEX</span> : null}
-        </div>
-        <div className="text-[11px] text-[var(--dim)] truncate" title={props.chantLiteral}>
-          {props.chantLiteral}
         </div>
         {props.status ? <div className="text-[11px] text-amber-200">{props.status}</div> : null}
       </div>
@@ -47,13 +40,9 @@ export function DesktopRow(props: Props) {
           </select>
           <button onClick={props.onTranslate} className="btn text-xs w-[96px] min-w-[96px] max-w-[96px]">Trans</button>
         </div>
-        <div className="flex gap-1 text-[11px] text-[var(--dim)]">
-          <button onClick={props.onTry} className="btn btn-ghost text-[11px]">Orig</button>
-        </div>
       </div>
 
       <div className="flex gap-1 flex-col min-w-[92px]">
-        {/* fixed width total ~132px per spec: audio 28 + save 56 + idiom 28 + gap + status internal - we keep outer 92px as container and inner fixed widths total ~112px */}
         <div className="flex gap-1">
           <button onClick={props.onAudio} className="btn text-xs w-[28px] min-w-[28px] max-w-[28px] h-8 p-0 flex items-center justify-center" title="play audio">🔊</button>
           <button onClick={props.onTrySave} className="btn text-xs w-[56px] min-w-[56px] max-w-[56px] h-8">Save</button>

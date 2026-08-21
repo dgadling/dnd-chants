@@ -5,8 +5,6 @@ import { LANG_OPTIONS, getLangOptionDisplay } from "@/lib/lang";
 type Props = {
   spellName: string;
   school: string;
-  isJex: boolean;
-  chantLiteral: string;
   box: string;
   targetLang: string;
   status: string;
@@ -25,11 +23,9 @@ export function MobileCard(props: Props) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
           <div className="font-semibold text-sm truncate">{props.spellName}</div>
-          {props.isJex ? <span className="badge-jex">★</span> : null}
         </div>
         <div className="text-[11px] text-[var(--dim)]">{props.school}</div>
       </div>
-      <div className="text-[11px] text-[var(--dim)] truncate">{props.chantLiteral}</div>
 
       <input className="input text-sm" value={props.box} onChange={(e) => props.onBoxChange(e.target.value)} placeholder="native [roman]" />
 

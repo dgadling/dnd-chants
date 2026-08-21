@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import spellsData from "@/src/data/spells.json";
-import { SCHOOLS, SCHOOL_DEFAULTS, LANG_OPTIONS, getLangName, formatBox, parseBox } from "@/lib/lang";
+import { SCHOOLS, getLangName, formatBox, parseBox } from "@/lib/lang";
 import type { School } from "@/lib/lang";
 import { DesktopRow } from "@/components/DesktopRow";
 import { MobileCard } from "@/components/MobileCard";
@@ -10,12 +9,6 @@ import { MobileCard } from "@/components/MobileCard";
 type Spell = {
   name: string;
   school: string;
-  isJex: boolean;
-  chant: string;
-  chant_native: string;
-  chant_literal: string;
-  lang_name: string;
-  lang_code: string;
 };
 
 type RowExtra = {
@@ -37,40 +30,19 @@ function useIsMobile(breakpoint = 880) {
 }
 
 export default function LabPage() {
-  const spellsArr: Spell[] = useMemo(() => {
-    const raw: any = spellsData as any;
-    const arr = Array.isArray(raw) ? raw : (Array.isArray(raw?.default) ? raw.default : []);
-    return arr as Spell[];
-  }, []);
+  // Future: populated from D&D Beyond character linking
+  const [spellsArr] = useState<Spell[]>([]);
 
   const grouped = useMemo(() => {
     const g: Record<string, Spell[]> = {};
-    const schoolsList: string[] = Array.isArray(SCHOOLS) ? (SCHOOLS as unknown as string[]) : [];
-    for (let idx = 0; idx < schoolsList.length; idx++) {
-      const s = schoolsList[idx] as string;
-      g[s] = [];
+    for (const s of SCHOOLS) g[s] = [];
+    for (const sp of spellsArr) {
+      if (!sp?.school) continue;
+      if (!g[sp.school]) g[sp.school] = [];
+      g[sp.school].push(sp);
     }
-    const list = Array.isArray(spellsArr) ? spellsArr : [];
-    for (let i = 0; i < list.length; i++) {
-      const sp = list[i] as Spell;
-      if (!sp) continue;
-      const sc = (sp as any).school as string;
-      if (!sc) continue;
-      if (!g[sc]) g[sc] = [];
-      g[sc].push(sp);
-    }
-    const keys = Object.keys(g);
-    for (let k = 0; k < keys.length; k++) {
-      const s = keys[k] as string;
-      const arr = g[s];
-      if (!Array.isArray(arr)) continue;
-      arr.sort((a, b) => {
-        const ia = !!(a as any).isJex;
-        const ib = !!(b as any).isJex;
-        if (ia && !ib) return -1;
-        if (!ia && ib) return 1;
-        return (a.name || "").localeCompare(b.name || "");
-      });
+    for (const s of Object.keys(g)) {
+      g[s].sort((a, b) => a.name.localeCompare(b.name));
     }
     return g;
   }, [spellsArr]);
@@ -98,11 +70,7 @@ export default function LabPage() {
   const ensureRow = (spellName: string): RowExtra => {
     const existing = extras[spellName];
     if (existing) return existing;
-    const sp = spellsArr.find((x) => x.name === spellName);
-    const school = ((sp?.school as School) || "Evocation") as School;
-    const def = (SCHOOL_DEFAULTS as any)[school] || "ru";
-    const initialBox = sp ? formatBox(sp.chant_native || sp.chant, sp.chant) : "";
-    return { box: initialBox, targetLang: def, saving: false, status: "" };
+    return { box: "", targetLang: "en", saving: false, status: "" };
   };
 
   const setRow = (name: string, patch: Partial<RowExtra>) => {
@@ -124,7 +92,7 @@ export default function LabPage() {
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: sp.chant_literal || sp.name, source: "en", target: row.targetLang }),
+        body: JSON.stringify({ text: sp.name, source: "en", target: row.targetLang }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j?.error || res.statusText);
@@ -151,12 +119,13 @@ export default function LabPage() {
   };
 
   const totalVerbal = spellsArr.length;
+  const activeSpells = grouped[activeSchool] || [];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2 items-center justify-between">
         <div className="flex flex-wrap gap-1">
-          {(SCHOOLS as unknown as string[]).map((s) => (
+          {SCHOOLS.map((s) => (
             <button
               key={s}
               onClick={() => setActiveSchool(s as School)}
@@ -166,20 +135,26 @@ export default function LabPage() {
             </button>
           ))}
         </div>
-        <div className="text-xs text-[var(--dim)]">verbal {totalVerbal} · mobile {isMobile ? "yes" : "no"}</div>
+        <div className="text-xs text-[var(--dim)]">{totalVerbal} spells</div>
       </div>
 
-      {isMobile ? (
+      {totalVerbal === 0 ? (
+        <div className="card px-6 py-12 text-center space-y-3">
+          <div className="text-lg font-semibold">No spells yet</div>
+          <div className="text-sm text-[var(--dim)] max-w-[420px] mx-auto">
+            Link your D&amp;D Beyond character to see your spells here. Spells will be generated per-character when you link a sheet – there&apos;s no static list.
+          </div>
+          <div className="text-xs text-[var(--dim)] pt-2">Future: paste D&amp;D Beyond URL or upload JSON to populate spells by school.</div>
+        </div>
+      ) : isMobile ? (
         <div className="grid grid-cols-1 gap-3">
-          {(grouped[activeSchool] || []).map((sp) => {
+          {activeSpells.map((sp) => {
             const row = extras[sp.name] ?? ensureRow(sp.name);
             return (
               <MobileCard
                 key={sp.name}
                 spellName={sp.name}
                 school={sp.school}
-                isJex={sp.isJex}
-                chantLiteral={sp.chant_literal}
                 box={row.box}
                 targetLang={row.targetLang}
                 status={row.status}
@@ -199,37 +174,33 @@ export default function LabPage() {
                 }}
                 onIdiom={() => {
                   const langName = getLangName(row.targetLang);
-                  const tryText = (parseBox(row.box).native || sp.chant_literal || sp.name).trim();
+                  const tryText = (parseBox(row.box).native || sp.name).trim();
                   window.open("https://www.google.com/search?q=" + encodeURIComponent(`idiom in ${langName} for "${tryText}"`), "_blank");
                 }}
               />
             );
           })}
+          {activeSpells.length === 0 ? (
+            <div className="text-sm text-[var(--dim)] text-center py-8">No spells in {activeSchool}. Link a character to populate.</div>
+          ) : null}
         </div>
       ) : (
         <div className="space-y-2">
           <div className="hidden md:grid grid-cols-[160px_1fr_260px_92px] gap-2 px-2 text-[11px] text-[var(--dim)] uppercase tracking-wide">
             <div>Spell</div><div>Chant box</div><div>Translate</div><div>Actions</div>
           </div>
-          {(grouped[activeSchool] || []).map((sp) => {
+          {activeSpells.map((sp) => {
             const row = extras[sp.name] ?? ensureRow(sp.name);
             return (
               <DesktopRow
                 key={sp.name}
                 spellName={sp.name}
-                isJex={sp.isJex}
-                chantLiteral={sp.chant_literal}
                 box={row.box}
                 targetLang={row.targetLang}
                 status={row.status}
                 onBoxChange={(v) => setRow(sp.name, { box: v })}
                 onLangChange={(v) => setRow(sp.name, { targetLang: v })}
                 onTranslate={() => onTranslate(sp.name)}
-                onTry={() =>
-                  setRow(sp.name, {
-                    box: formatBox(sp.chant_native || sp.chant, sp.chant),
-                  })
-                }
                 onTrySave={() => onTrySave(sp.name)}
                 onAudio={() => {
                   const { native } = parseBox(row.box);
@@ -242,18 +213,17 @@ export default function LabPage() {
                 }}
                 onIdiom={() => {
                   const langName = getLangName(row.targetLang);
-                  const tryText = (parseBox(row.box).native || sp.chant_literal || sp.name).trim();
+                  const tryText = (parseBox(row.box).native || sp.name).trim();
                   window.open("https://www.google.com/search?q=" + encodeURIComponent(`idiom in ${langName} for "${tryText}"`), "_blank");
                 }}
               />
             );
           })}
+          {activeSpells.length === 0 ? (
+            <div className="text-sm text-[var(--dim)] text-center py-12">No spells in {activeSchool}. Link a character to populate.</div>
+          ) : null}
         </div>
       )}
-
-      <div className="text-[11px] text-[var(--dim)]">
-        School defaults: Abj iw, Conj is, Div hi, Ench it, Evo ru, Ill ar, Nec la, Trans de · count {LANG_OPTIONS.length}
-      </div>
     </div>
   );
 }
