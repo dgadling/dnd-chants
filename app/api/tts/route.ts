@@ -3,6 +3,19 @@ import { getGoogleTl, getSpeechLang } from "@/lib/lang";
 
 const audioMemCache = new Map<string, { buf: ArrayBuffer; mime: string; at: number }>();
 const MAX = 100;
+const TTL_MS = 24 * 60 * 60 * 1000;
+
+function evictExpired() {
+  const now = Date.now();
+  for (const [k, v] of audioMemCache) {
+    if (now - v.at > TTL_MS) audioMemCache.delete(k);
+  }
+  while (audioMemCache.size > MAX) {
+    const first = audioMemCache.keys().next().value;
+    if (!first) break;
+    audioMemCache.delete(first);
+  }
+}
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -13,15 +26,20 @@ export async function GET(req: Request) {
   const effectiveTl = getGoogleTl(targetRaw) || targetRaw;
   const cacheKey = `${effectiveTl}|${textRaw.toLowerCase()}`;
 
+  evictExpired();
   const cached = audioMemCache.get(cacheKey);
   if (cached) {
-    return new NextResponse(cached.buf, {
-      headers: {
-        "Content-Type": cached.mime,
-        "Cache-Control": "public, max-age=86400",
-        "X-Cache": "HIT",
-      },
-    });
+    if (Date.now() - cached.at <= TTL_MS) {
+      return new NextResponse(cached.buf, {
+        headers: {
+          "Content-Type": cached.mime,
+          "Cache-Control": "public, max-age=86400",
+          "X-Cache": "HIT",
+        },
+      });
+    } else {
+      audioMemCache.delete(cacheKey);
+    }
   }
 
   const q = encodeURIComponent(textRaw);
@@ -42,10 +60,7 @@ export async function GET(req: Request) {
     const mime = res.headers.get("content-type") || "audio/mpeg";
     const ab = await res.arrayBuffer();
 
-    if (audioMemCache.size >= MAX) {
-      const first = audioMemCache.keys().next().value;
-      if (first) audioMemCache.delete(first);
-    }
+    evictExpired();
     audioMemCache.set(cacheKey, { buf: ab, mime, at: Date.now() });
 
     return new NextResponse(ab, {

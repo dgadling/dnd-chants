@@ -5,9 +5,23 @@ type TranslateBody = { text?: string; source?: string; target?: string };
 
 const cache = new Map<string, { translated: string; romanized: string; targetUsed: string; at: number }>();
 const MAX_CACHE = 500;
+const TTL_MS = 24 * 60 * 60 * 1000; // 24h TTL - evict expired, prevents leak in Cloud Run instance memory
 
 function cacheKey(source: string, target: string, lowerOrig: string) {
   return `${source}|${target}|${lowerOrig}`;
+}
+
+function evictExpired() {
+  const now = Date.now();
+  for (const [k, v] of cache) {
+    if (now - v.at > TTL_MS) cache.delete(k);
+  }
+  // Also enforce MAX with LRU (oldest first, Map insertion order)
+  while (cache.size > MAX_CACHE) {
+    const first = cache.keys().next().value;
+    if (!first) break;
+    cache.delete(first);
+  }
 }
 
 async function googleTranslateV2(source: string, target: string, text: string, apiKey: string): Promise<string> {
@@ -53,7 +67,18 @@ async function fetchGtxPrimary(src: string, tgt: string, text: string): Promise<
       const t0 = typeof seg[0] === "string" ? seg[0] : "";
       if (t0) nativeOut += t0;
 
-      const isLatin = (s: string) => typeof s === "string" && s.trim().length > 0 && /[A-Za-z]/.test(s);
+      const isLatin = (s: string) => {
+        if (typeof s !== "string") return false;
+        const t = s.trim();
+        if (!t) return false;
+        // Check for Latin script including extended (Þ ð, diacritics) - not just A-Z
+        // Use unicode property escape if available, fallback to extended range
+        try {
+          return /\p{Script=Latin}/u.test(t);
+        } catch {
+          return /[A-Za-z\u00C0-\u024F\u1E00-\u1EFF\u00D0\u00F0\u00DE\u00FE]/.test(t);
+        }
+      };
       const distinctFromOrig = (s: string) => {
         const sl_ = s.toLowerCase().trim();
         if (sl_ === lowerOrig) return false;
@@ -108,9 +133,15 @@ export async function POST(req: Request) {
   const lowerOrig = text.toLowerCase();
 
   const k = cacheKey(source, target, lowerOrig);
+  evictExpired();
   const cached = cache.get(k);
   if (cached) {
-    return NextResponse.json({ translated: cached.translated, romanized: cached.romanized, targetUsed: cached.targetUsed, cached: true });
+    // Check TTL still valid
+    if (Date.now() - cached.at <= TTL_MS) {
+      return NextResponse.json({ translated: cached.translated, romanized: cached.romanized, targetUsed: cached.targetUsed, cached: true });
+    } else {
+      cache.delete(k);
+    }
   }
 
   let native = "";
@@ -138,10 +169,7 @@ export async function POST(req: Request) {
 
   if (roman && roman.toLowerCase() === native.toLowerCase()) roman = "";
 
-  if (cache.size >= MAX_CACHE) {
-    const first = cache.keys().next().value;
-    if (first) cache.delete(first);
-  }
+  evictExpired();
   cache.set(k, { translated: native, romanized: roman, targetUsed: target, at: Date.now() });
 
   return NextResponse.json({ translated: native, romanized: roman, targetUsed: target });

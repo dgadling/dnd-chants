@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SCHOOLS, SCHOOL_DEFAULTS, LANG_OPTIONS, getLangName, getLangOptionDisplay, formatBox, parseBox } from "@/lib/lang";
 import type { School } from "@/lib/lang";
+import { playCachedAudio } from "@/lib/audio";
 import { DesktopRow } from "@/components/DesktopRow";
 import { MobileCard } from "@/components/MobileCard";
 
@@ -312,9 +313,7 @@ export default function LabPage() {
     const t = native.trim();
     if (!t) return;
     const tl = activeTargetLang;
-    const url = `/api/tts?text=${encodeURIComponent(t)}&target=${encodeURIComponent(tl)}`;
-    const a = new Audio(url);
-    a.play().catch(() => {});
+    void playCachedAudio(t, tl);
   }, [extras, activeTargetLang]);
 
   const handleIdiom = useCallback((spellName: string) => {
