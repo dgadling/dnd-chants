@@ -12,6 +12,7 @@ type Spell = {
 };
 
 type RowExtra = {
+  englishPhrase: string;
   box: string;
   saving: boolean;
   status: string;
@@ -113,16 +114,19 @@ export default function LabPage() {
     try {
       const raw = localStorage.getItem(STORAGE_EXTRAS);
       if (raw) {
-        const parsed = JSON.parse(raw) as Record<string, RowExtra>;
-        // Migrate old entries that had targetLang
+        const parsed = JSON.parse(raw) as Record<string, any>;
         const cleaned: Record<string, RowExtra> = {};
         for (const [k, v] of Object.entries(parsed)) {
-          const { box, saving, status } = v as any;
           cleaned[k] = {
-            box: typeof box === "string" ? box : "",
-            saving: !!saving,
-            status: typeof status === "string" ? status : "",
+            englishPhrase: typeof v.englishPhrase === "string" ? v.englishPhrase : typeof v.box === "string" && !v.box.includes("[") ? "" : (v as any).englishPhrase || "",
+            box: typeof v.box === "string" ? v.box : "",
+            saving: !!v.saving,
+            status: typeof v.status === "string" ? v.status : "",
           };
+          // Migrate old: if box empty and no englishPhrase, default englishPhrase to spell name later via ensureRow fallback
+          if (!cleaned[k].englishPhrase) {
+            // leave empty, will be populated via spell name in UI via placeholder
+          }
         }
         setExtras(cleaned);
       }
@@ -154,18 +158,18 @@ export default function LabPage() {
     (spellName: string): RowExtra => {
       const existing = extras[spellName];
       if (existing) return existing;
-      return { box: "", saving: false, status: "" };
+      return { englishPhrase: "", box: "", saving: false, status: "" };
     },
     [extras]
   );
 
-  const setRow = (name: string, patch: Partial<RowExtra>) => {
+  const setRow = useCallback((name: string, patch: Partial<RowExtra>) => {
     setExtras((prev) => {
-      const cur = prev[name] ?? { box: "", saving: false, status: "" };
+      const cur = prev[name] ?? { englishPhrase: "", box: "", saving: false, status: "" };
       const nextRow = { ...cur, ...patch };
       return { ...prev, [name]: nextRow };
     });
-  };
+  }, []);
 
   // DDB link load on mount + auto-refetch if >4h
   useEffect(() => {
@@ -179,17 +183,14 @@ export default function LabPage() {
       setCharacterName(parsed.characterName || "");
       setLastFetchISO(parsed.lastFetchISO || "");
       setLastModifiedISO(parsed.lastModifiedISO || null);
-      // If fetch older than 4h, trigger auto refresh
       if (parsed.lastFetchISO) {
         const age = Date.now() - new Date(parsed.lastFetchISO).getTime();
         if (age > FOUR_HOURS_MS) {
-          // Defer to next tick to allow state to settle
           setTimeout(() => {
             void fetchCharacter(parsed.characterId, { silent: true });
           }, 500);
         }
       }
-      // Also set activeSchool to first school with spells
       const firstWithSpells = SCHOOLS.find((s) => (parsed.spells as Spell[]).some((sp) => sp.school === s));
       if (firstWithSpells) setActiveSchool(firstWithSpells as School);
     } catch {}
@@ -217,20 +218,16 @@ export default function LabPage() {
         body: JSON.stringify({ urlOrId: id }),
       });
       const j = await res.json();
-      if (!res.ok) {
-        throw new Error(j?.error || res.statusText);
-      }
+      if (!res.ok) throw new Error(j?.error || res.statusText);
       const spells: Spell[] = (j.spells || []).map((s: any) => ({ name: s.name, school: s.school }));
       const charName = j.characterName || "";
       const fetchTime = j.fetchTime || new Date().toISOString();
       const lastMod = j.lastModified || null;
-
       setSpellsArr(spells);
       setCharacterId(j.characterId || id);
       setCharacterName(charName);
       setLastFetchISO(fetchTime);
       setLastModifiedISO(lastMod);
-
       persistLink({
         characterId: j.characterId || id,
         characterName: charName,
@@ -238,11 +235,8 @@ export default function LabPage() {
         lastModifiedISO: lastMod,
         spells,
       });
-
-      // pick active school to first with spells
       const firstWith = SCHOOLS.find((s) => spells.some((sp) => sp.school === s));
       if (firstWith) setActiveSchool(firstWith as School);
-
       if (!opts.silent) {
         setLinkStatus(`Loaded ${charName ? charName + " – " : ""}${spells.length} spells`);
         setTimeout(() => setLinkStatus(""), 2500);
@@ -270,46 +264,50 @@ export default function LabPage() {
 
   const activeTargetLang = schoolLangs[activeSchool] || SCHOOL_DEFAULTS[activeSchool as School] || "en";
 
-  const onTranslate = async (name: string) => {
-    const row = extras[name] ?? { box: "", saving: false, status: "" };
-    const sp = spellsArr.find((x) => x.name === name);
+  const onTranslate = useCallback(async (spellName: string) => {
+    const row = extras[spellName] ?? { englishPhrase: "", box: "", saving: false, status: "" };
+    const sp = spellsArr.find((x) => x.name === spellName);
     if (!sp) return;
-    setRow(name, { saving: false, status: "translate..." });
+    // Use try phrasing if present, else spell name (like Space does)
+    const textToTranslate = (row.englishPhrase || sp.name).trim();
+    if (!textToTranslate) return;
+    setRow(spellName, { saving: false, status: "translate..." });
     try {
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: sp.name, source: "en", target: activeTargetLang }),
+        body: JSON.stringify({ text: textToTranslate, source: "en", target: activeTargetLang }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j?.error || res.statusText);
       const translated = (j.translated as string) || "";
       const romanized = (j.romanized as string) || "";
       const box = formatBox(translated, romanized);
-      setRow(name, { box, status: "ok" });
-      setTimeout(() => setRow(name, { status: "" }), 1500);
+      setRow(spellName, { box, status: "ok" });
+      setTimeout(() => setRow(spellName, { status: "" }), 1500);
     } catch (e: any) {
-      setRow(name, { status: `err ${String(e?.message || e).slice(0, 80)}` });
+      setRow(spellName, { status: `err ${String(e?.message || e).slice(0, 80)}` });
     }
-  };
+  }, [extras, spellsArr, activeTargetLang, setRow]);
 
-  const onTrySave = async (name: string) => {
-    const row = extras[name] ?? { box: "", saving: false, status: "" };
-    setRow(name, { saving: true, status: "save..." });
+  const onTrySave = useCallback(async (spellName: string) => {
+    const row = extras[spellName] ?? { englishPhrase: "", box: "", saving: false, status: "" };
+    setRow(spellName, { saving: true, status: "save..." });
     try {
       const { native, roman } = parseBox(row.box);
-      setRow(name, { saving: false, status: `saved ${native.slice(0, 12)}${roman ? " [" + roman.slice(0, 10) + "]" : ""}` });
-      setTimeout(() => setRow(name, { status: "" }), 1800);
+      if (!native) throw new Error("Translate first");
+      setRow(spellName, { saving: false, status: `saved ${native.slice(0, 12)}${roman ? " [" + roman.slice(0, 10) + "]" : ""}` });
+      setTimeout(() => setRow(spellName, { status: "" }), 1800);
     } catch (e: any) {
-      setRow(name, { saving: false, status: `err ${String(e?.message || e).slice(0, 70)}` });
+      setRow(spellName, { saving: false, status: `err ${String(e?.message || e).slice(0, 70)}` });
     }
-  };
+  }, [extras, setRow]);
 
   const totalVerbal = spellsArr.length;
   const activeSpells = grouped[activeSchool] || [];
 
   const handleAudio = useCallback((spellName: string) => {
-    const row = extras[spellName] ?? { box: "", saving: false, status: "" };
+    const row = extras[spellName] ?? { englishPhrase: "", box: "", saving: false, status: "" };
     const { native } = parseBox(row.box);
     const t = native.trim();
     if (!t) return;
@@ -320,25 +318,24 @@ export default function LabPage() {
   }, [extras, activeTargetLang]);
 
   const handleIdiom = useCallback((spellName: string) => {
-    const row = extras[spellName] ?? { box: "", saving: false, status: "" };
+    const row = extras[spellName] ?? { englishPhrase: "", box: "", saving: false, status: "" };
     const sp = spellsArr.find((x) => x.name === spellName);
     const langName = getLangName(activeTargetLang);
-    const tryText = (parseBox(row.box).native || sp?.name || spellName).trim();
+    const englishPhrase = row.englishPhrase?.trim() || "";
+    const tryText = englishPhrase || (parseBox(row.box).native || sp?.name || spellName).trim();
     window.open("https://www.google.com/search?q=" + encodeURIComponent(`idiom in ${langName} for "${tryText}"`), "_blank");
   }, [extras, spellsArr, activeTargetLang]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-[1200px] mx-auto">
       {/* DDB Link Bar */}
-      <div className="card px-4 py-3 flex flex-col gap-3">
+      <div className="card px-5 py-4 flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)]">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
           <div className="flex-1 min-w-0">
             {characterId ? (
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="font-semibold truncate">{characterName || `Character ${characterId}`}</span>
-                <span className="text-[var(--dim)] text-xs">
-                  {totalVerbal} spells
-                </span>
+                <span className="text-[var(--dim)] text-xs">{totalVerbal} spells</span>
                 {lastFetchISO ? (
                   <span className="text-xs text-[var(--dim)]" title={lastFetchISO}>
                     Last fetch {formatRelative(lastFetchISO)}
@@ -352,7 +349,7 @@ export default function LabPage() {
           </div>
           <div className="flex gap-2">
             {characterId ? (
-              <button onClick={onRefreshClick} disabled={isLinking} className="btn text-xs h-8">
+              <button onClick={onRefreshClick} disabled={isLinking} className="btn text-xs h-8 px-3">
                 {isLinking ? "Refreshing…" : "Refresh"}
               </button>
             ) : null}
@@ -361,15 +358,13 @@ export default function LabPage() {
 
         <div className="flex flex-col sm:flex-row gap-2">
           <input
-            className="input text-sm flex-1"
+            className="input text-sm flex-1 h-10"
             value={linkInput}
             onChange={(e) => setLinkInput(e.target.value)}
             placeholder="https://www.dndbeyond.com/characters/12345678 or 12345678"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") onLinkClick();
-            }}
+            onKeyDown={(e) => { if (e.key === "Enter") onLinkClick(); }}
           />
-          <button onClick={onLinkClick} disabled={isLinking} className="btn text-sm h-9 sm:w-[140px]">
+          <button onClick={onLinkClick} disabled={isLinking} className="btn text-sm h-10 sm:w-[160px]">
             {isLinking ? "Linking…" : characterId ? "Change" : "Link Character"}
           </button>
         </div>
@@ -378,12 +373,12 @@ export default function LabPage() {
 
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap gap-2 items-center justify-between">
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {SCHOOLS.map((s) => (
               <button
                 key={s}
                 onClick={() => setActiveSchool(s as School)}
-                className={`btn ${activeSchool === s ? "" : "btn-ghost"} text-sm`}
+                className={`btn ${activeSchool === s ? "" : "btn-ghost"} text-[13px] px-3 py-1.5 rounded-full`}
               >
                 {s} {grouped[s]?.length ? `· ${grouped[s].length}` : ""}
               </button>
@@ -392,14 +387,13 @@ export default function LabPage() {
           <div className="text-xs text-[var(--dim)]">{totalVerbal} spells</div>
         </div>
 
-        {/* Per-school language selector - one only, fixes DOM bloat */}
         {totalVerbal > 0 ? (
-          <div className="flex items-center gap-2 text-sm card px-3 py-2">
-            <div className="text-xs text-[var(--dim)] whitespace-nowrap">
-              {activeSchool} → {getLangName(activeTargetLang)}
+          <div className="flex items-center gap-3 text-sm card px-4 py-3 rounded-xl">
+            <div className="text-sm font-medium whitespace-nowrap">
+              {activeSchool} → <span className="text-[var(--dim)]">{getLangName(activeTargetLang)} ({activeTargetLang})</span>
             </div>
             <select
-              className="input text-sm flex-1 max-w-[280px]"
+              className="input text-sm flex-1 max-w-[280px] h-9"
               value={activeTargetLang}
               onChange={(e) => setSchoolLangs((prev) => ({ ...prev, [activeSchool]: e.target.value }))}
             >
@@ -407,20 +401,18 @@ export default function LabPage() {
                 <option key={o.code} value={o.code}>{getLangOptionDisplay(o)}</option>
               ))}
             </select>
-            <div className="text-[11px] text-[var(--dim)] hidden sm:block">
-              111 options once, not per row
-            </div>
+            <div className="text-[11px] text-[var(--dim)] hidden md:block">per-school, not per-spell</div>
           </div>
         ) : null}
       </div>
 
       {totalVerbal === 0 ? (
-        <div className="card px-6 py-12 text-center space-y-3">
+        <div className="card px-6 py-12 text-center space-y-3 rounded-xl">
           <div className="text-lg font-semibold">No spells yet</div>
           <div className="text-sm text-[var(--dim)] max-w-[420px] mx-auto">
             Link your D&amp;D Beyond character to see your spells here. Spells are generated per-character when you link a sheet – there is no static list.
           </div>
-          <div className="text-xs text-[var(--dim)] pt-2">Paste D&amp;D Beyond URL above, or upload will be added later. Make sure sharing is enabled in D&D Beyond.</div>
+          <div className="text-xs text-[var(--dim)] pt-2">Paste D&amp;D Beyond URL above. Make sure sharing is enabled in D&D Beyond.</div>
         </div>
       ) : isMobile ? (
         <div className="grid grid-cols-1 gap-3">
@@ -431,10 +423,12 @@ export default function LabPage() {
                 key={sp.name}
                 spellName={sp.name}
                 school={sp.school}
+                englishPhrase={row.englishPhrase}
                 box={row.box}
                 targetLang={activeTargetLang}
                 status={row.status}
                 saving={row.saving}
+                onEnglishChange={(v) => setRow(sp.name, { englishPhrase: v })}
                 onBoxChange={(v) => setRow(sp.name, { box: v })}
                 onTranslate={() => onTranslate(sp.name)}
                 onTrySave={() => onTrySave(sp.name)}
@@ -448,9 +442,9 @@ export default function LabPage() {
           ) : null}
         </div>
       ) : (
-        <div className="space-y-2">
-          <div className="hidden md:grid grid-cols-[200px_1fr_140px] gap-3 px-3 text-[11px] text-[var(--dim)] uppercase tracking-wide">
-            <div>Spell</div><div>Chant box</div><div>Actions</div>
+        <div className="space-y-3">
+          <div className="hidden md:grid grid-cols-[180px_1fr_1fr_140px] gap-3 px-3 text-[11px] text-[var(--dim)] uppercase tracking-wide">
+            <div>Spell</div><div>Try phrasing</div><div>Chant box</div><div>Actions</div>
           </div>
           {activeSpells.map((sp) => {
             const row = extras[sp.name] ?? ensureRow(sp.name);
@@ -458,9 +452,11 @@ export default function LabPage() {
               <DesktopRow
                 key={sp.name}
                 spellName={sp.name}
+                englishPhrase={row.englishPhrase}
                 box={row.box}
                 targetLang={activeTargetLang}
                 status={row.status}
+                onEnglishChange={(v) => setRow(sp.name, { englishPhrase: v })}
                 onBoxChange={(v) => setRow(sp.name, { box: v })}
                 onTranslate={() => onTranslate(sp.name)}
                 onTrySave={() => onTrySave(sp.name)}
