@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { localTransliterate } from "@/lib/transliterate";
 import { getGoogleTl } from "@/lib/lang";
 
 type TranslateBody = { text?: string; source?: string; target?: string };
@@ -135,13 +134,6 @@ export async function POST(req: Request) {
 
   if (!native) {
     return NextResponse.json({ error: "translate failed (gtx down, no v2 key)" }, { status: 502 });
-  }
-
-  if (!roman) {
-    const local = localTransliterate(native, target);
-    if (local && local.toLowerCase() !== native.toLowerCase() && /[A-Za-z]/.test(local)) {
-      roman = local.trim().slice(0, 500);
-    }
   }
 
   if (roman && roman.toLowerCase() === native.toLowerCase()) roman = "";
