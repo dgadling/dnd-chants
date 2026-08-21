@@ -1,0 +1,21 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/chants-506202/dnd-chants:$COMMIT_SHA', '-t', 'gcr.io/chants-506202/dnd-chants:latest', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/chants-506202/dnd-chants:$COMMIT_SHA']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/chants-506202/dnd-chants:latest']
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'dnd-chants'
+      - '--image=gcr.io/chants-506202/dnd-chants:$COMMIT_SHA'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--project=chants-506202'
+images:
+  - 'gcr.io/chants-506202/dnd-chants:$COMMIT_SHA'
+  - 'gcr.io/chants-506202/dnd-chants:latest'
