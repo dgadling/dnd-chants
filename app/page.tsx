@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { SCHOOLS, getLangName, formatBox, parseBox } from "@/lib/lang";
 import type { School } from "@/lib/lang";
 import { DesktopRow } from "@/components/DesktopRow";
@@ -18,6 +18,18 @@ type RowExtra = {
   status: string;
 };
 
+type DdbLink = {
+  characterId: string;
+  characterName: string;
+  lastFetchISO: string;
+  lastModifiedISO?: string | null;
+  spells: Spell[];
+};
+
+const STORAGE_LINK = "dnd-chant-ddb-link-v1";
+const STORAGE_EXTRAS = "dnd-chant-extras-v1";
+const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+
 function useIsMobile(breakpoint = 880) {
   const [m, setM] = useState(false);
   useEffect(() => {
@@ -29,9 +41,45 @@ function useIsMobile(breakpoint = 880) {
   return m;
 }
 
+function formatRelative(iso: string | null | undefined): string {
+  if (!iso) return "unknown";
+  try {
+    const then = new Date(iso).getTime();
+    const now = Date.now();
+    const diff = now - then;
+    if (diff < 0) return "just now";
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+  } catch {
+    return iso;
+  }
+}
+
+function extractIdForDisplay(input: string): string | null {
+  const s = (input || "").trim();
+  if (!s) return null;
+  if (/^\d+$/.test(s)) return s;
+  const m = s.match(/characters\/(\d{2,})/i);
+  if (m) return m[1];
+  const m2 = s.match(/(\d{5,})/);
+  if (m2) return m2[1];
+  return null;
+}
+
 export default function LabPage() {
-  // Future: populated from D&D Beyond character linking
-  const [spellsArr] = useState<Spell[]>([]);
+  const [spellsArr, setSpellsArr] = useState<Spell[]>([]);
+  const [characterId, setCharacterId] = useState<string>("");
+  const [characterName, setCharacterName] = useState<string>("");
+  const [lastFetchISO, setLastFetchISO] = useState<string>("");
+  const [lastModifiedISO, setLastModifiedISO] = useState<string | null>(null);
+  const [linkInput, setLinkInput] = useState<string>("");
+  const [linkStatus, setLinkStatus] = useState<string>("");
+  const [isLinking, setIsLinking] = useState<boolean>(false);
 
   const grouped = useMemo(() => {
     const g: Record<string, Spell[]> = {};
@@ -51,9 +99,10 @@ export default function LabPage() {
   const [activeSchool, setActiveSchool] = useState<School>("Evocation");
   const [extras, setExtras] = useState<Record<string, RowExtra>>({});
 
+  // Load extras from localStorage on mount
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("dnd-chant-extras-v1");
+      const raw = localStorage.getItem(STORAGE_EXTRAS);
       if (raw) {
         const parsed = JSON.parse(raw) as Record<string, RowExtra>;
         setExtras(parsed);
@@ -61,30 +110,133 @@ export default function LabPage() {
     } catch {}
   }, []);
 
-  const persist = (next: Record<string, RowExtra>) => {
+  // Persist extras whenever they change
+  useEffect(() => {
     try {
-      localStorage.setItem("dnd-chant-extras-v1", JSON.stringify(next));
+      localStorage.setItem(STORAGE_EXTRAS, JSON.stringify(extras));
     } catch {}
-  };
+  }, [extras]);
 
-  const ensureRow = (spellName: string): RowExtra => {
-    const existing = extras[spellName];
-    if (existing) return existing;
-    return { box: "", targetLang: "en", saving: false, status: "" };
-  };
+  const ensureRow = useCallback(
+    (spellName: string, extrasMap: Record<string, RowExtra> = extras): RowExtra => {
+      const existing = extrasMap[spellName];
+      if (existing) return existing;
+      return { box: "", targetLang: "en", saving: false, status: "" };
+    },
+    [extras]
+  );
 
   const setRow = (name: string, patch: Partial<RowExtra>) => {
     setExtras((prev) => {
-      const cur = prev[name] ?? ensureRow(name);
+      const cur = prev[name] ?? { box: "", targetLang: "en", saving: false, status: "" };
       const nextRow = { ...cur, ...patch };
-      const next = { ...prev, [name]: nextRow };
-      persist(next);
-      return next;
+      return { ...prev, [name]: nextRow };
     });
   };
 
+  // DDB link load on mount + auto-refetch if >4h
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_LINK);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as DdbLink;
+      if (!parsed?.characterId || !Array.isArray(parsed.spells)) return;
+      setSpellsArr(parsed.spells);
+      setCharacterId(parsed.characterId);
+      setCharacterName(parsed.characterName || "");
+      setLastFetchISO(parsed.lastFetchISO || "");
+      setLastModifiedISO(parsed.lastModifiedISO || null);
+      // If fetch older than 4h, trigger auto refresh
+      if (parsed.lastFetchISO) {
+        const age = Date.now() - new Date(parsed.lastFetchISO).getTime();
+        if (age > FOUR_HOURS_MS) {
+          // Defer to next tick to allow state to settle
+          setTimeout(() => {
+            void fetchCharacter(parsed.characterId, { silent: true });
+          }, 500);
+        }
+      }
+      // Also set activeSchool to first school with spells
+      const firstWithSpells = SCHOOLS.find((s) => (parsed.spells as Spell[]).some((sp) => sp.school === s));
+      if (firstWithSpells) setActiveSchool(firstWithSpells as School);
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const persistLink = (link: DdbLink) => {
+    try {
+      localStorage.setItem(STORAGE_LINK, JSON.stringify(link));
+    } catch {}
+  };
+
+  const fetchCharacter = async (idOrUrl: string, opts: { silent?: boolean } = {}) => {
+    const id = extractIdForDisplay(idOrUrl);
+    if (!id) {
+      if (!opts.silent) setLinkStatus("Could not parse id – paste URL like https://www.dndbeyond.com/characters/12345678");
+      return;
+    }
+    setIsLinking(true);
+    if (!opts.silent) setLinkStatus("Fetching character…");
+    try {
+      const res = await fetch("/api/dndbeyond", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ urlOrId: id }),
+      });
+      const j = await res.json();
+      if (!res.ok) {
+        throw new Error(j?.error || res.statusText);
+      }
+      const spells: Spell[] = (j.spells || []).map((s: any) => ({ name: s.name, school: s.school }));
+      const charName = j.characterName || "";
+      const fetchTime = j.fetchTime || new Date().toISOString();
+      const lastMod = j.lastModified || null;
+
+      setSpellsArr(spells);
+      setCharacterId(j.characterId || id);
+      setCharacterName(charName);
+      setLastFetchISO(fetchTime);
+      setLastModifiedISO(lastMod);
+
+      persistLink({
+        characterId: j.characterId || id,
+        characterName: charName,
+        lastFetchISO: fetchTime,
+        lastModifiedISO: lastMod,
+        spells,
+      });
+
+      // pick active school to first with spells
+      const firstWith = SCHOOLS.find((s) => spells.some((sp) => sp.school === s));
+      if (firstWith) setActiveSchool(firstWith as School);
+
+      if (!opts.silent) {
+        setLinkStatus(`Loaded ${charName ? charName + " – " : ""}${spells.length} spells`);
+        setTimeout(() => setLinkStatus(""), 2500);
+      }
+    } catch (e: any) {
+      if (!opts.silent) setLinkStatus(`Error: ${String(e?.message || e).slice(0, 120)}`);
+    } finally {
+      setIsLinking(false);
+    }
+  };
+
+  const onLinkClick = () => {
+    const id = extractIdForDisplay(linkInput);
+    if (!id) {
+      setLinkStatus("Enter D&D Beyond URL or numeric id");
+      return;
+    }
+    void fetchCharacter(id);
+  };
+
+  const onRefreshClick = () => {
+    if (!characterId) return;
+    void fetchCharacter(characterId);
+  };
+
   const onTranslate = async (name: string) => {
-    const row = extras[name] ?? ensureRow(name);
+    const row = extras[name] ?? { box: "", targetLang: "en", saving: false, status: "" };
     const sp = spellsArr.find((x) => x.name === name);
     if (!sp) return;
     setRow(name, { saving: false, status: "translate..." });
@@ -107,7 +259,7 @@ export default function LabPage() {
   };
 
   const onTrySave = async (name: string) => {
-    const row = extras[name] ?? ensureRow(name);
+    const row = extras[name] ?? { box: "", targetLang: "en", saving: false, status: "" };
     setRow(name, { saving: true, status: "save..." });
     try {
       const { native, roman } = parseBox(row.box);
@@ -123,6 +275,53 @@ export default function LabPage() {
 
   return (
     <div className="space-y-6">
+      {/* DDB Link Bar */}
+      <div className="card px-4 py-3 flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
+          <div className="flex-1 min-w-0">
+            {characterId ? (
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="font-semibold truncate">{characterName || `Character ${characterId}`}</span>
+                <span className="text-[var(--dim)] text-xs">
+                  {totalVerbal} spells
+                </span>
+                {lastFetchISO ? (
+                  <span className="text-xs text-[var(--dim)]" title={lastFetchISO}>
+                    Last fetch {formatRelative(lastFetchISO)}
+                    {lastModifiedISO ? ` • sheet modified ${formatRelative(lastModifiedISO)}` : ""}
+                  </span>
+                ) : null}
+              </div>
+            ) : (
+              <div className="text-sm text-[var(--dim)]">No character linked – paste D&D Beyond URL to load spells</div>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {characterId ? (
+              <button onClick={onRefreshClick} disabled={isLinking} className="btn text-xs h-8">
+                {isLinking ? "Refreshing…" : "Refresh"}
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            className="input text-sm flex-1"
+            value={linkInput}
+            onChange={(e) => setLinkInput(e.target.value)}
+            placeholder="https://www.dndbeyond.com/characters/12345678 or 12345678"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onLinkClick();
+            }}
+          />
+          <button onClick={onLinkClick} disabled={isLinking} className="btn text-sm h-9 sm:w-[140px]">
+            {isLinking ? "Linking…" : characterId ? "Change" : "Link Character"}
+          </button>
+        </div>
+        {linkStatus ? <div className="text-xs text-amber-200">{linkStatus}</div> : null}
+      </div>
+
       <div className="flex flex-wrap gap-2 items-center justify-between">
         <div className="flex flex-wrap gap-1">
           {SCHOOLS.map((s) => (
@@ -142,14 +341,14 @@ export default function LabPage() {
         <div className="card px-6 py-12 text-center space-y-3">
           <div className="text-lg font-semibold">No spells yet</div>
           <div className="text-sm text-[var(--dim)] max-w-[420px] mx-auto">
-            Link your D&amp;D Beyond character to see your spells here. Spells will be generated per-character when you link a sheet – there&apos;s no static list.
+            Link your D&amp;D Beyond character to see your spells here. Spells are generated per-character when you link a sheet – there is no static list.
           </div>
-          <div className="text-xs text-[var(--dim)] pt-2">Future: paste D&amp;D Beyond URL or upload JSON to populate spells by school.</div>
+          <div className="text-xs text-[var(--dim)] pt-2">Paste D&amp;D Beyond URL above, or upload will be added later. Make sure sharing is enabled in D&D Beyond.</div>
         </div>
       ) : isMobile ? (
         <div className="grid grid-cols-1 gap-3">
           {activeSpells.map((sp) => {
-            const row = extras[sp.name] ?? ensureRow(sp.name);
+            const row = extras[sp.name] ?? ensureRow(sp.name, extras);
             return (
               <MobileCard
                 key={sp.name}
@@ -190,7 +389,7 @@ export default function LabPage() {
             <div>Spell</div><div>Chant box</div><div>Translate</div><div>Actions</div>
           </div>
           {activeSpells.map((sp) => {
-            const row = extras[sp.name] ?? ensureRow(sp.name);
+            const row = extras[sp.name] ?? ensureRow(sp.name, extras);
             return (
               <DesktopRow
                 key={sp.name}
