@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { SCHOOLS, SCHOOL_DEFAULTS, LANG_OPTIONS, getLangName, getLangOptionDisplay, formatBox, parseBox } from "@/lib/lang";
+import { SCHOOLS, SCHOOL_DEFAULTS, LANG_OPTIONS, getLangOptionDisplay, formatBox, parseBox, getLangName } from "@/lib/lang";
 import type { School } from "@/lib/lang";
-import { playCachedAudio } from "@/lib/audio";
 import { DesktopRow } from "@/components/DesktopRow";
 import { MobileCard } from "@/components/MobileCard";
 
@@ -17,8 +16,6 @@ type RowExtra = {
   box: string;
   saving: boolean;
   status: string;
-  justSaved?: boolean;
-  saveFailed?: boolean;
 };
 
 type DdbLink = {
@@ -33,17 +30,6 @@ const STORAGE_LINK = "dnd-chant-ddb-link-v1";
 const STORAGE_EXTRAS = "dnd-chant-extras-v1";
 const STORAGE_SCHOOL_LANGS = "dnd-chant-school-langs-v1";
 const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
-
-function useIsMobile(breakpoint = 880) {
-  const [m, setM] = useState(false);
-  useEffect(() => {
-    const q = () => setM(typeof window !== "undefined" ? window.innerWidth < breakpoint : false);
-    q();
-    window.addEventListener("resize", q);
-    return () => window.removeEventListener("resize", q);
-  }, [breakpoint]);
-  return m;
-}
 
 function formatRelative(iso: string | null | undefined): string {
   if (!iso) return "unknown";
@@ -99,11 +85,8 @@ export default function LabPage() {
     return g;
   }, [spellsArr]);
 
-  const isMobile = useIsMobile(880);
   const [activeSchool, setActiveSchool] = useState<School>("Evocation");
   const [extras, setExtras] = useState<Record<string, RowExtra>>({});
-
-  // Per-school language, initialized with defaults, persisted
   const [schoolLangs, setSchoolLangs] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
     for (const s of SCHOOLS) {
@@ -112,7 +95,7 @@ export default function LabPage() {
     return init;
   });
 
-  // Load extras and schoolLangs from localStorage on mount
+  // Load extras and schoolLangs
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_EXTRAS);
@@ -121,15 +104,11 @@ export default function LabPage() {
         const cleaned: Record<string, RowExtra> = {};
         for (const [k, v] of Object.entries(parsed)) {
           cleaned[k] = {
-            englishPhrase: typeof v.englishPhrase === "string" ? v.englishPhrase : typeof v.box === "string" && !v.box.includes("[") ? "" : (v as any).englishPhrase || "",
+            englishPhrase: typeof v.englishPhrase === "string" ? v.englishPhrase : "",
             box: typeof v.box === "string" ? v.box : "",
             saving: !!v.saving,
             status: typeof v.status === "string" ? v.status : "",
           };
-          // Migrate old: if box empty and no englishPhrase, default englishPhrase to spell name later via ensureRow fallback
-          if (!cleaned[k].englishPhrase) {
-            // leave empty, will be populated via spell name in UI via placeholder
-          }
         }
         setExtras(cleaned);
       }
@@ -143,38 +122,19 @@ export default function LabPage() {
     } catch {}
   }, []);
 
-  // Persist extras whenever they change
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_EXTRAS, JSON.stringify(extras));
     } catch {}
   }, [extras]);
 
-  // Persist schoolLangs
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_SCHOOL_LANGS, JSON.stringify(schoolLangs));
     } catch {}
   }, [schoolLangs]);
 
-  const ensureRow = useCallback(
-    (spellName: string): RowExtra => {
-      const existing = extras[spellName];
-      if (existing) return existing;
-      return { englishPhrase: "", box: "", saving: false, status: "" };
-    },
-    [extras]
-  );
-
-  const setRow = useCallback((name: string, patch: Partial<RowExtra>) => {
-    setExtras((prev) => {
-      const cur = prev[name] ?? { englishPhrase: "", box: "", saving: false, status: "" };
-      const nextRow = { ...cur, ...patch };
-      return { ...prev, [name]: nextRow };
-    });
-  }, []);
-
-  // DDB link load on mount + auto-refetch if >4h
+  // DDB link load + auto-refetch >4h
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_LINK);
@@ -186,6 +146,9 @@ export default function LabPage() {
       setCharacterName(parsed.characterName || "");
       setLastFetchISO(parsed.lastFetchISO || "");
       setLastModifiedISO(parsed.lastModifiedISO || null);
+      // set activeSchool to first school with spells
+      const first = SCHOOLS.find((s) => (parsed.spells as Spell[]).some((sp) => sp.school === s));
+      if (first) setActiveSchool(first as School);
       if (parsed.lastFetchISO) {
         const age = Date.now() - new Date(parsed.lastFetchISO).getTime();
         if (age > FOUR_HOURS_MS) {
@@ -194,8 +157,6 @@ export default function LabPage() {
           }, 500);
         }
       }
-      const firstWithSpells = SCHOOLS.find((s) => (parsed.spells as Spell[]).some((sp) => sp.school === s));
-      if (firstWithSpells) setActiveSchool(firstWithSpells as School);
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -231,6 +192,8 @@ export default function LabPage() {
       setCharacterName(charName);
       setLastFetchISO(fetchTime);
       setLastModifiedISO(lastMod);
+      const first = SCHOOLS.find((s) => spells.some((sp) => sp.school === s));
+      if (first) setActiveSchool(first as School);
       persistLink({
         characterId: j.characterId || id,
         characterName: charName,
@@ -238,8 +201,6 @@ export default function LabPage() {
         lastModifiedISO: lastMod,
         spells,
       });
-      const firstWith = SCHOOLS.find((s) => spells.some((sp) => sp.school === s));
-      if (firstWith) setActiveSchool(firstWith as School);
       if (!opts.silent) {
         setLinkStatus(`Loaded ${charName ? charName + " – " : ""}${spells.length} spells`);
         setTimeout(() => setLinkStatus(""), 2500);
@@ -265,225 +226,201 @@ export default function LabPage() {
     void fetchCharacter(characterId);
   };
 
-  const activeTargetLang = schoolLangs[activeSchool] || SCHOOL_DEFAULTS[activeSchool as School] || "en";
-
-  const onTranslate = useCallback(async (spellName: string) => {
-    const row = extras[spellName] ?? { englishPhrase: "", box: "", saving: false, status: "" };
-    const sp = spellsArr.find((x) => x.name === spellName);
-    if (!sp) return;
-    // Use try phrasing if present, else spell name (like Space does)
-    const textToTranslate = (row.englishPhrase || sp.name).trim();
-    if (!textToTranslate) return;
-    setRow(spellName, { saving: false, status: "translate..." });
-    try {
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: textToTranslate, source: "en", target: activeTargetLang }),
-      });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j?.error || res.statusText);
-      const translated = (j.translated as string) || "";
-      const romanized = (j.romanized as string) || "";
-      const box = formatBox(translated, romanized);
-      setRow(spellName, { box, status: "ok" });
-      setTimeout(() => setRow(spellName, { status: "" }), 1500);
-    } catch (e: any) {
-      setRow(spellName, { status: `err ${String(e?.message || e).slice(0, 80)}` });
-    }
-  }, [extras, spellsArr, activeTargetLang, setRow]);
-
-  const onTrySave = useCallback(async (spellName: string) => {
-    const row = extras[spellName] ?? { englishPhrase: "", box: "", saving: false, status: "", justSaved: false, saveFailed: false };
-    if (!row.box.trim()) {
-      setRow(spellName, { status: "Translate first", justSaved: false, saveFailed: false });
-      setTimeout(() => setRow(spellName, { status: "" }), 2000);
-      return;
-    }
-    setRow(spellName, { saving: true, status: "Saving locally...", justSaved: false, saveFailed: false });
-    try {
-      const { native, roman } = parseBox(row.box);
-      if (!native) throw new Error("Translate first");
-      // Local-only save: persists to localStorage via extras useEffect, not server
-      // Clarify local-only, show justSaved ✓ 2s like Space
-      setRow(spellName, { saving: false, justSaved: true, saveFailed: false, status: `✓ saved locally ${native.slice(0, 12)}${roman ? " [" + roman.slice(0, 10) + "]" : ""}` });
-      setTimeout(() => setRow(spellName, { status: "", justSaved: false }), 2000);
-    } catch (e: any) {
-      setRow(spellName, { saving: false, justSaved: false, saveFailed: true, status: `failed ${String(e?.message || e).slice(0, 70)}` });
-      setTimeout(() => setRow(spellName, { status: "", saveFailed: false }), 3000);
-    }
-  }, [extras, setRow]);
-
   const totalVerbal = spellsArr.length;
+  const activeTargetLang = schoolLangs[activeSchool] || SCHOOL_DEFAULTS[activeSchool as School] || "en";
   const activeSpells = grouped[activeSchool] || [];
 
-  const handleAudio = useCallback((spellName: string) => {
-    const row = extras[spellName] ?? { englishPhrase: "", box: "", saving: false, status: "" };
-    const { native } = parseBox(row.box);
-    const t = native.trim();
-    if (!t) return;
-    const tl = activeTargetLang;
-    void playCachedAudio(t, tl);
-  }, [extras, activeTargetLang]);
-
-  const handleIdiom = useCallback((spellName: string) => {
-    const row = extras[spellName] ?? { englishPhrase: "", box: "", saving: false, status: "" };
-    const sp = spellsArr.find((x) => x.name === spellName);
-    const langName = getLangName(activeTargetLang);
-    const englishPhrase = row.englishPhrase?.trim() || "";
-    const tryText = englishPhrase || (parseBox(row.box).native || sp?.name || spellName).trim();
-    window.open("https://www.google.com/search?q=" + encodeURIComponent(`idiom in ${langName} for "${tryText}"`), "_blank");
-  }, [extras, spellsArr, activeTargetLang]);
+  const handleSave = useCallback((spellName: string, englishPhrase: string, native: string, roman: string) => {
+    const box = formatBox(native, roman);
+    setExtras((prev) => ({
+      ...prev,
+      [spellName]: {
+        englishPhrase,
+        box,
+        saving: false,
+        status: `✓ saved locally ${native.slice(0, 20)}`,
+      },
+    }));
+  }, []);
 
   return (
-    <div className="space-y-6 max-w-[1200px] mx-auto">
-      {/* DDB Link Bar */}
-      <div className="card px-5 py-4 flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)]">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
-          <div className="flex-1 min-w-0">
-            {characterId ? (
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="font-semibold truncate">{characterName || `Character ${characterId}`}</span>
-                <span className="text-[var(--dim)] text-xs">{totalVerbal} spells</span>
-                {lastFetchISO ? (
-                  <span className="text-xs text-[var(--dim)]" title={lastFetchISO}>
-                    Last fetch {formatRelative(lastFetchISO)}
-                    {lastModifiedISO ? ` • sheet modified ${formatRelative(lastModifiedISO)}` : ""}
-                  </span>
-                ) : null}
-              </div>
-            ) : (
-              <div className="text-sm text-[var(--dim)]">No character linked – paste D&D Beyond URL to load spells</div>
-            )}
-          </div>
-          <div className="flex gap-2">
-            {characterId ? (
-              <button onClick={onRefreshClick} disabled={isLinking} className="btn text-xs h-8 px-3">
-                {isLinking ? "Refreshing…" : "Refresh"}
-              </button>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-2">
-          <input
-            className="input text-sm flex-1 h-10"
-            value={linkInput}
-            onChange={(e) => setLinkInput(e.target.value)}
-            placeholder="https://www.dndbeyond.com/characters/12345678 or 12345678"
-            onKeyDown={(e) => { if (e.key === "Enter") onLinkClick(); }}
-          />
-          <button onClick={onLinkClick} disabled={isLinking} className="btn text-sm h-10 sm:w-[160px]">
-            {isLinking ? "Linking…" : characterId ? "Change" : "Link Character"}
-          </button>
-        </div>
-        {linkStatus ? <div className="text-xs text-amber-200">{linkStatus}</div> : null}
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap gap-2 items-center justify-between">
-          <div className="flex flex-wrap gap-1.5">
-            {SCHOOLS.map((s) => (
-              <button
-                key={s}
-                onClick={() => setActiveSchool(s as School)}
-                className={`btn ${activeSchool === s ? "" : "btn-ghost"} text-[13px] px-3 py-1.5 rounded-full`}
-              >
-                {s} {grouped[s]?.length ? `· ${grouped[s].length}` : ""}
-              </button>
-            ))}
-          </div>
-          <div className="text-xs text-[var(--dim)]">{totalVerbal} spells</div>
-        </div>
-
-        {totalVerbal > 0 ? (
-          <div className="flex items-center gap-3 text-sm card px-4 py-3 rounded-xl">
-            <div className="text-sm font-medium whitespace-nowrap">
-              {activeSchool} → <span className="text-[var(--dim)]">{getLangName(activeTargetLang)} ({activeTargetLang})</span>
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] pb-[env(safe-area-inset-bottom)]">
+      <main className="mx-auto max-w-6xl px-3 py-4 pb-10 md:px-4">
+        {/* DDB Link Bar */}
+        <div className="card px-5 py-4 flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] mb-5">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
+            <div className="flex-1 min-w-0">
+              {characterId ? (
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="font-semibold truncate">{characterName || `Character ${characterId}`}</span>
+                  <span className="text-[var(--dim)] text-xs">{totalVerbal} spells</span>
+                  {lastFetchISO ? (
+                    <span className="text-xs text-[var(--dim)]" title={lastFetchISO}>
+                      Last fetch {formatRelative(lastFetchISO)}
+                      {lastModifiedISO ? ` • sheet modified ${formatRelative(lastModifiedISO)}` : ""}
+                    </span>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="text-sm text-[var(--dim)]">No character linked – paste D&D Beyond URL to load spells</div>
+              )}
             </div>
-            <select
-              className="input text-sm flex-1 max-w-[280px] h-9"
-              value={activeTargetLang}
-              onChange={(e) => setSchoolLangs((prev) => ({ ...prev, [activeSchool]: e.target.value }))}
-            >
-              {LANG_OPTIONS.map((o) => (
-                <option key={o.code} value={o.code}>{getLangOptionDisplay(o)}</option>
-              ))}
-            </select>
-            <div className="text-[11px] text-[var(--dim)] hidden md:block">per-school, not per-spell</div>
+            <div className="flex gap-2">
+              {characterId ? (
+                <button onClick={onRefreshClick} disabled={isLinking} className="btn text-xs h-8 px-3">
+                  {isLinking ? "Refreshing…" : "Refresh"}
+                </button>
+              ) : null}
+            </div>
           </div>
-        ) : null}
-      </div>
 
-      {totalVerbal === 0 ? (
-        <div className="card px-6 py-12 text-center space-y-3 rounded-xl">
-          <div className="text-lg font-semibold">No spells yet</div>
-          <div className="text-sm text-[var(--dim)] max-w-[420px] mx-auto">
-            Link your D&amp;D Beyond character to see your spells here. Spells are generated per-character when you link a sheet – there is no static list.
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              className="input text-sm flex-1 h-10"
+              value={linkInput}
+              onChange={(e) => setLinkInput(e.target.value)}
+              placeholder="https://www.dndbeyond.com/characters/12345678 or 12345678"
+              onKeyDown={(e) => { if (e.key === "Enter") onLinkClick(); }}
+            />
+            <button onClick={onLinkClick} disabled={isLinking} className="btn text-sm h-10 sm:w-[160px]">
+              {isLinking ? "Linking…" : characterId ? "Change" : "Link Character"}
+            </button>
           </div>
-          <div className="text-xs text-[var(--dim)] pt-2">Paste D&amp;D Beyond URL above. Make sure sharing is enabled in D&D Beyond.</div>
+          {linkStatus ? <div className="text-xs text-amber-200">{linkStatus}</div> : null}
         </div>
-      ) : isMobile ? (
-        <div className="grid grid-cols-1 gap-3">
-          {activeSpells.map((sp) => {
-            const row = extras[sp.name] ?? ensureRow(sp.name);
-            return (
-              <MobileCard
-                key={sp.name}
-                spellName={sp.name}
-                school={sp.school}
-                englishPhrase={row.englishPhrase}
-                box={row.box}
-                targetLang={activeTargetLang}
-                status={row.status}
-                saving={row.saving}
-                justSaved={row.justSaved}
-                saveFailed={row.saveFailed}
-                onEnglishChange={(v) => setRow(sp.name, { englishPhrase: v })}
-                onBoxChange={(v) => setRow(sp.name, { box: v })}
-                onTranslate={() => onTranslate(sp.name)}
-                onTrySave={() => onTrySave(sp.name)}
-                onAudio={() => handleAudio(sp.name)}
-                onIdiom={() => handleIdiom(sp.name)}
-              />
-            );
-          })}
-          {activeSpells.length === 0 ? (
-            <div className="text-sm text-[var(--dim)] text-center py-8">No spells in {activeSchool}. Link a character to populate.</div>
-          ) : null}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div className="hidden md:grid grid-cols-[180px_1fr_1fr_140px] gap-3 px-3 text-[11px] text-[var(--dim)] uppercase tracking-wide">
-            <div>Spell</div><div>Try phrasing</div><div>Chant box</div><div>Actions</div>
+
+        <header className="mb-5">
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight">D&D Chants</h1>
+            <p className="mt-1 text-[13px] md:text-sm text-[var(--dim)] max-w-[34rem] leading-snug">
+              <span className="md:hidden">Tap a school to reword. Link your D&D Beyond character above.</span>
+              <span className="hidden md:inline">{totalVerbal ? `${totalVerbal} spells grouped by school. ` : ""}Type a new English cue, hit ▶ to translate, 🔊 to hear it, 💾 to save locally.</span>
+            </p>
           </div>
-          {activeSpells.map((sp) => {
-            const row = extras[sp.name] ?? ensureRow(sp.name);
-            return (
-              <DesktopRow
-                key={sp.name}
-                spellName={sp.name}
-                englishPhrase={row.englishPhrase}
-                box={row.box}
-                targetLang={activeTargetLang}
-                status={row.status}
-                justSaved={row.justSaved}
-                saveFailed={row.saveFailed}
-                saving={row.saving}
-                onEnglishChange={(v) => setRow(sp.name, { englishPhrase: v })}
-                onBoxChange={(v) => setRow(sp.name, { box: v })}
-                onTranslate={() => onTranslate(sp.name)}
-                onTrySave={() => onTrySave(sp.name)}
-                onAudio={() => handleAudio(sp.name)}
-                onIdiom={() => handleIdiom(sp.name)}
-              />
-            );
-          })}
-          {activeSpells.length === 0 ? (
-            <div className="text-sm text-[var(--dim)] text-center py-12">No spells in {activeSchool}. Link a character to populate.</div>
-          ) : null}
+        </header>
+
+        {/* Per-school tabs - keep, user said good */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {SCHOOLS.map((s) => (
+            <button
+              key={s}
+              onClick={() => setActiveSchool(s as School)}
+              className={`btn text-[13px] px-3 py-1.5 rounded-full ${activeSchool === s ? "" : "btn-ghost"}`}
+            >
+              {s} {grouped[s]?.length ? `· ${grouped[s].length}` : ""}
+            </button>
+          ))}
         </div>
-      )}
+
+        {totalVerbal === 0 ? (
+          <div className="card px-6 py-12 text-center space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+            <div className="text-lg font-semibold">No spells yet</div>
+            <div className="text-sm text-[var(--dim)] max-w-[420px] mx-auto">
+              Link your D&amp;D Beyond character to see your spells here. Spells are generated per-character when you link a sheet – there is no static list.
+            </div>
+            <div className="text-xs text-[var(--dim)] pt-2">Paste D&amp;D Beyond URL above. Make sure sharing is enabled in D&D Beyond.</div>
+          </div>
+        ) : (
+          <section className="mb-5 md:mb-8 rounded-[14px] md:rounded-xl bg-[var(--surface)] border border-[var(--border)] overflow-hidden shadow-[0_1px_0_rgba(0,0,0,0.02)]">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3 px-3 py-3 md:px-4 border-b border-[var(--border)] bg-[#faf6ef] dark:bg-[#1a1a1a]">
+              <div className="flex items-center gap-2">
+                <h2 className="text-[16px] md:text-lg font-semibold">
+                  {activeSchool} → <span className="text-[var(--dim)]">{getLangName(activeTargetLang)} ({activeTargetLang})</span>
+                </h2>
+                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-white dark:bg-black border border-[var(--border)] text-[var(--dim)]">
+                  {activeSpells.length}
+                </span>
+              </div>
+              <label className="flex items-center gap-2 text-sm w-full md:w-auto">
+                <span className="text-[var(--dim)] text-xs md:text-sm shrink-0">Language</span>
+                <select
+                  aria-label={`Language for ${activeSchool}`}
+                  className="flex-1 md:flex-none rounded-lg md:rounded-md border border-[var(--border)] bg-white px-2.5 py-2.5 md:py-1.5 text-[14px] md:text-sm dark:bg-black max-w-none md:max-w-[14rem] focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  value={activeTargetLang}
+                  onChange={(e) => setSchoolLangs((prev) => ({ ...prev, [activeSchool]: e.target.value }))}
+                >
+                  {LANG_OPTIONS.map((o) => (
+                    <option key={`${o.code}-${o.label}`} value={o.code}>
+                      {getLangOptionDisplay(o)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            {/* Desktop table - rows identical to space */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-xs uppercase tracking-wide text-[var(--dim)] border-b border-[var(--border)]">
+                    <th className="py-2 px-2 font-medium">Spell</th>
+                    <th className="py-2 px-2 font-medium">Try phrasing</th>
+                    <th className="py-2 px-1 font-medium">Go</th>
+                    <th className="py-2 px-2 font-medium">Result</th>
+                    <th className="py-2 px-1 font-medium w-[96px] min-w-[96px] max-w-[96px] whitespace-nowrap">Save / Audio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeSpells.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-sm text-[var(--dim)]">
+                        No spells in {activeSchool}. Link a character to populate.
+                      </td>
+                    </tr>
+                  ) : (
+                    activeSpells.map((sp) => {
+                      const extra = extras[sp.name];
+                      const tryDefault = extra?.englishPhrase || sp.name;
+                      const parsed = extra?.box ? parseBox(extra.box) : { native: "", roman: "" };
+                      return (
+                        <DesktopRow
+                          key={`d-${activeSchool}-${sp.name}-${activeTargetLang}`}
+                          spell={sp}
+                          targetLang={activeTargetLang}
+                          school={activeSchool}
+                          initialInput={tryDefault}
+                          initialNative={parsed.native}
+                          initialRoman={parsed.roman}
+                          onSave={(en, nat, rom) => handleSave(sp.name, en, nat, rom)}
+                        />
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards - identical to space */}
+            <div className="md:hidden divide-y divide-[var(--border)]">
+              {activeSpells.length === 0 ? (
+                <div className="p-8 text-center text-sm text-[var(--dim)]">No spells in {activeSchool}. Link a character to populate.</div>
+              ) : (
+                activeSpells.map((sp) => {
+                  const extra = extras[sp.name];
+                  const tryDefault = extra?.englishPhrase || sp.name;
+                  const parsed = extra?.box ? parseBox(extra.box) : { native: "", roman: "" };
+                  return (
+                    <MobileCard
+                      key={`m-${activeSchool}-${sp.name}-${activeTargetLang}`}
+                      spell={sp}
+                      targetLang={activeTargetLang}
+                      school={activeSchool}
+                      initialInput={tryDefault}
+                      initialNative={parsed.native}
+                      initialRoman={parsed.roman}
+                      onSave={(en, nat, rom) => handleSave(sp.name, en, nat, rom)}
+                    />
+                  );
+                })
+              )}
+            </div>
+          </section>
+        )}
+
+        <footer className="mt-8 text-[11px] md:text-xs text-[var(--dim)] leading-relaxed px-1 md:px-0">
+          Speech uses cached audio mem → IDB → server. Saves persist locally in browser. Language per school, not per spell.
+        </footer>
+      </main>
     </div>
   );
 }

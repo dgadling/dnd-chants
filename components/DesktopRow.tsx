@@ -1,70 +1,189 @@
 "use client";
 
+import { useCallback, useEffect, useRef, useState } from "react";
+import { formatBox, parseBox } from "@/lib/lang";
+import { playCachedAudio } from "@/lib/audio";
+
+type Spell = {
+  name: string;
+  school: string;
+};
+
 type Props = {
-  spellName: string;
-  englishPhrase: string;
-  box: string;
+  spell: Spell;
   targetLang: string;
-  status: string;
-  justSaved?: boolean;
-  saveFailed?: boolean;
-  saving?: boolean;
-  onEnglishChange: (v: string) => void;
-  onBoxChange: (v: string) => void;
-  onTranslate: () => void;
-  onTrySave: () => void;
-  onAudio: () => void;
-  onIdiom: () => void;
+  school: string;
+  initialInput: string;
+  initialNative: string;
+  initialRoman: string;
+  onSave?: (englishPhrase: string, native: string, roman: string) => void;
 };
 
 export function DesktopRow(props: Props) {
-  const saveTitle = props.justSaved
+  const { spell, targetLang, school, initialInput, initialNative, initialRoman, onSave } = props;
+  const [input, setInput] = useState(initialInput || "");
+  const [boxText, setBoxText] = useState(() => formatBox(initialNative, initialRoman));
+  const [justSaved, setJustSaved] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [transError, setTransError] = useState<string>("");
+  const [isSaving, setIsSaving] = useState(false);
+  const lastTranslatedRef = useRef<string>("");
+
+  // sync input when preload arrives
+  useEffect(() => {
+    if (initialInput && initialInput !== input) {
+      setInput(initialInput);
+    }
+  }, [initialInput]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (initialNative && !boxText.trim()) {
+      setBoxText(formatBox(initialNative, initialRoman));
+    }
+  }, [initialNative, initialRoman]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const parsed = parseBox(boxText);
+  const effectiveNative = parsed.native;
+  const effectiveRoman = parsed.roman;
+
+  const handleTranslate = useCallback(async () => {
+    const trimmed = input.trim();
+    if (!trimmed) return;
+    const norm = trimmed.toLowerCase();
+    if (norm === lastTranslatedRef.current && effectiveNative) return;
+    if (norm === lastTranslatedRef.current && isTranslating) return;
+    setIsTranslating(true);
+    setTransError("");
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: trimmed, source: "en", target: targetLang }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j?.error || res.statusText);
+      const newNative = (j.translated as string || "").slice(0, 500);
+      const newRoman = (j.romanized as string || "").slice(0, 500);
+      const formatted = formatBox(newNative, newRoman);
+      setBoxText(formatted);
+      lastTranslatedRef.current = norm;
+    } catch (e: any) {
+      setTransError(String(e?.message || e).slice(0, 80));
+    } finally {
+      setIsTranslating(false);
+    }
+  }, [input, targetLang, effectiveNative, isTranslating]);
+
+  const handlePlay = useCallback(() => {
+    const toSpeak = effectiveNative;
+    if (!toSpeak) return;
+    void playCachedAudio(toSpeak, targetLang);
+  }, [effectiveNative, targetLang]);
+
+  const handleSave = useCallback(() => {
+    if (!effectiveNative || !input.trim()) return;
+    setSaveFailed(false);
+    setIsSaving(true);
+    try {
+      if (onSave) {
+        onSave(input.trim(), effectiveNative.slice(0, 1000), (effectiveRoman || "").slice(0, 1000));
+      }
+      setJustSaved(true);
+      setSaveFailed(false);
+      setTimeout(() => setJustSaved(false), 2000);
+    } catch {
+      setSaveFailed(true);
+      setTimeout(() => setSaveFailed(false), 3000);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [effectiveNative, effectiveRoman, input, onSave]);
+
+  const saveDisabled = !effectiveNative || !input.trim() || isSaving;
+  const saveTitle = justSaved
     ? "✓ saved locally 2s"
-    : props.saveFailed
+    : saveFailed
     ? "failed 3s – local only, not server"
-    : !props.box.trim()
+    : !effectiveNative
     ? "Translate first – save is local-only"
-    : props.saving
+    : isSaving
     ? "Saving locally..."
     : "Save locally (browser only, not server)";
-  const saveLabel = props.justSaved ? "✓ Saved" : props.saveFailed ? "Failed" : props.saving ? "Saving..." : "Save";
+
   return (
-    <div className="grid grid-cols-[180px_1fr_1fr_140px] gap-3 items-start card px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-[var(--border-strong)] transition-colors">
-      <div className="flex flex-col gap-1.5 min-w-0 pt-1">
-        <div className="text-[14px] font-semibold leading-tight truncate" title={props.spellName}>
-          {props.spellName}
-        </div>
-        <div className="text-[11px] text-[var(--dim)]">{props.targetLang}</div>
-        {props.status ? <div className={`text-[11px] font-medium ${props.justSaved ? "text-emerald-300" : props.saveFailed ? "text-red-300" : "text-amber-300"}`}>{props.status}</div> : null}
-      </div>
-
-      <div className="flex flex-col gap-1 min-w-0">
+    <tr className="border-b border-[var(--border)] align-top">
+      <td className="py-2 px-2 text-sm font-medium text-[var(--text)] whitespace-nowrap max-w-[9rem] truncate">
+        {spell.name}
+      </td>
+      <td className="py-2 px-2 min-w-[11rem]">
         <input
-          aria-label={`Try phrasing for ${props.spellName}`}
-          className="input text-[13px] w-full h-9"
-          value={props.englishPhrase}
-          onChange={(e) => props.onEnglishChange(e.target.value)}
-          placeholder={`try phrasing for ${props.spellName}`}
-          onKeyDown={(e) => { if (e.key === "Enter" && props.englishPhrase.trim()) props.onTranslate(); }}
+          aria-label={`Try phrasing for ${spell.name}`}
+          className="w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-amber-400"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="try phrasing"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && input.trim()) handleTranslate();
+          }}
         />
-      </div>
-
-      <div className="flex flex-col gap-1 min-w-0">
+      </td>
+      <td className="py-2 px-1">
+        <button
+          aria-label={`Translate ${spell.name}`}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-amber-400 text-black text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-amber-300"
+          disabled={!input.trim() || isTranslating}
+          onClick={handleTranslate}
+          type="button"
+          title={transError || "Translate"}
+        >
+          {isTranslating ? "…" : "▶"}
+        </button>
+      </td>
+      <td className="py-2 px-2 text-sm text-[var(--text)] max-w-[16rem] min-w-[10rem]">
         <input
-          aria-label={`Chant box for ${props.spellName} – native [roman] editable`}
-          className="input text-[13px] w-full h-9 font-mono"
-          value={props.box}
-          onChange={(e) => props.onBoxChange(e.target.value)}
+          aria-label={`Translation for ${spell.name}`}
+          className="w-full rounded-md border border-[var(--border)] bg-white dark:bg-zinc-900 px-2 py-1.5 text-[13px] text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-amber-400 placeholder:text-[var(--dim)]"
+          value={boxText}
+          onChange={(e) => setBoxText(e.target.value)}
           placeholder="native [roman]"
         />
-      </div>
-
-      <div className="flex gap-1.5 items-start flex-wrap">
-        <button onClick={props.onTranslate} aria-label={`Translate ${props.spellName}`} className="btn text-xs h-9 px-3" title="Translate try phrasing">Trans</button>
-        <button onClick={props.onAudio} aria-label={`Play audio for ${props.spellName}`} className="btn text-xs w-9 h-9 p-0 flex items-center justify-center" title="play audio – cached mem→IDB→server">🔊</button>
-        <button onClick={props.onTrySave} aria-label={`Save ${props.spellName} locally`} className={`btn text-xs h-9 px-3 ${props.justSaved ? "bg-emerald-600" : props.saveFailed ? "bg-red-700" : ""}`} title={saveTitle}>{saveLabel}</button>
-        <button onClick={props.onIdiom} aria-label={`Search idiom for ${props.spellName}`} className="btn btn-ghost text-xs w-9 h-9 p-0 flex items-center justify-center" title="idiom search – opens Google">💬</button>
-      </div>
-    </div>
+        {transError ? (
+          <div className="mt-1 text-[11px] text-red-500 truncate" title={transError}>
+            error: {transError.slice(0, 80)}
+          </div>
+        ) : null}
+      </td>
+      <td className="py-2 px-1 w-[96px] min-w-[96px] max-w-[96px] whitespace-nowrap">
+        <div className="flex items-center gap-1 flex-nowrap">
+          <button
+            aria-label={`Play audio for ${spell.name}`}
+            className="inline-flex h-7 w-7 min-w-[28px] shrink-0 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+            disabled={!effectiveNative}
+            onClick={handlePlay}
+            type="button"
+            title={effectiveNative ? `speak in ${targetLang}` : "no translation yet"}
+          >
+            🔊
+          </button>
+          <button
+            aria-label={`Save ${spell.name}`}
+            className={`inline-flex h-7 w-[56px] min-w-[56px] max-w-[56px] shrink-0 items-center justify-center rounded-md border text-[11px] font-medium disabled:opacity-30 disabled:cursor-not-allowed px-0 ${
+              saveFailed
+                ? "border-red-400 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300"
+                : justSaved
+                ? "border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
+                : "border-[var(--border)] bg-[var(--surface)] hover:bg-amber-50 dark:hover:bg-amber-900/10"
+            }`}
+            disabled={saveDisabled}
+            onClick={handleSave}
+            type="button"
+            title={saveTitle}
+          >
+            {isSaving ? "…" : saveFailed ? "✕" : justSaved ? "✓" : "💾"}
+          </button>
+        </div>
+      </td>
+    </tr>
   );
 }
