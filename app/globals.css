@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0b0b10;
+  --surface: #15151f;
+  --border: #2a2a3d;
+  --text: #e6e6ef;
+  --dim: #9aa0b3;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-system, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  -webkit-font-smoothing: antialiased;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.input {
+  background: #0f0f18;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--text);
+  width: 100%;
+}
+
+.btn {
+  background: #2a2a5a;
+  border: 1px solid #3a3a7a;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+.badge-jex {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #d6a84a;
+  color: #101010;
+  font-weight: 700;
+}
