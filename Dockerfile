@@ -1,19 +1,19 @@
-# multi-stage for Cloud Run
-FROM node:20-slim AS builder
+# bun-based multi-stage for local reference
+FROM oven/bun:1.1 AS builder
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci || npm install
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 COPY . .
-RUN npm run build
+RUN bun run build
 
-FROM node:20-slim AS runner
+FROM oven/bun:1.1 AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/public ./public 2>/dev/null || true
-COPY --from=builder /app/next.config.js ./next.config.js 2>/dev/null || true
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.js ./next.config.js
 EXPOSE 8080
-CMD ["npm","run","start"]
+CMD ["bun", "run", "start"]
