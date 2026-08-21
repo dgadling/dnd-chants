@@ -1,0 +1,42 @@
+#!/bin/sh
+# Pre-push – blocks push if lint/tests fail
+# Enable with: git config core.hooksPath .githooks
+# Note: this hook may take a while due to tests (typically 15-25s). CI runs the same checks
+# via .github/workflows/ci.yml – see that file for the full reference.
+# If you push a commit that fails CI because you used `git push --no-verify`,
+# you will be permanently banned from this project.
+set -e
+echo "▶ pre-push: ruff + pytest + eslint + frontend-test (may take 15-25s – see ci.yml)"
+
+# backend: venv check + ruff + pytest — mirrors CI backend job in .github/workflows/ci.yml
+if [ ! -x backend/.venv/bin/python ]; then
+  echo "❌ backend/.venv missing – run: cd backend && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-test.txt"; exit 1
+fi
+echo "  backend: ruff"
+(cd backend && .venv/bin/python -m ruff check . 2>&1) || { echo "❌ ruff failed"; exit 1; }
+
+echo "  backend: pytest – full suite like CI (includes test_env_fail_closed.py, slow subprocess isolation tests)"
+# CI sets env vars for full suite – use same test values so local matches CI behavior
+# These values mirror ci.yml env block
+export DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID:-test_client_id}
+export DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET:-test_client_secret}
+export DISCORD_REDIRECT_URI=${DISCORD_REDIRECT_URI:-http://localhost/test}
+export DISCORD_OAUTH_FERNET_KEY=${DISCORD_OAUTH_FERNET_KEY:-apzkrYXo_4Dsr3gK8IXnormnjtG3C3Xw3CL-Jzl84Os=}
+export SESSION_SECRET=${SESSION_SECRET:-test_super_secret_session_key_must_be_32_chars}
+export SUPERUSER_DISCORD_ID=${SUPERUSER_DISCORD_ID:-123456789}
+(cd backend && .venv/bin/python -m pytest -v 2>&1) || { echo "❌ pytest failed"; exit 1; }
+
+# frontend: install check + eslint + vitest + build – mirrors CI frontend job
+if [ ! -d frontend/node_modules ]; then
+  echo "❌ frontend/node_modules missing – run npm install (or bun install in sandbox)"; exit 1
+fi
+echo "  frontend: eslint"
+(cd frontend && ./node_modules/.bin/eslint src --ext .js,.jsx 2>&1) || { echo "❌ eslint failed"; exit 1; }
+
+echo "  frontend: test (vitest – like CI 'npm test')"
+(cd frontend && ./node_modules/.bin/vitest run 2>&1) || { echo "❌ frontend test failed"; exit 1; }
+
+echo "  frontend: build (like CI)"
+(cd frontend && npm run build 2>&1 | tail -5) || { echo "❌ frontend build failed"; exit 1; }
+
+echo "✓ pre-push checks passed – matches CI jobs in .github/workflows/ci.yml"

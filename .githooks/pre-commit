@@ -1,0 +1,73 @@
+#!/bin/sh
+# Pre-commit – blocks commit if lint/tests fail
+set -e
+echo "▶ pre-commit: ruff + pytest + eslint + frontend-test"
+
+# --- TDD enforcement: API changes must include test changes ---
+# If any backend/app/api/*.py is staged, at least one backend/tests/test_*.py must also be staged
+api_changed=$(git diff --cached --name-only | grep -E '^backend/app/api/.*\.py$' || true)
+if [ -n "$api_changed" ]; then
+  tests_changed=$(git diff --cached --name-only | grep -E '^backend/tests/test_.*\.py$' || true)
+  if [ -z "$tests_changed" ]; then
+    echo "❌ TDD enforcement: backend API files changed but no test files staged"
+    echo "Changed API files:"
+    echo "$api_changed" | sed 's/^/  /'
+    echo ""
+    echo "Add regression tests for your changes, then commit again."
+    echo "To bypass (emergency only): git commit --no-verify"
+    exit 1
+  fi
+fi
+
+# --- Auth bypass guard: block TEST_BYPASS_AUTH in shippable files ---
+# Prevents accidental commit of test auth bypass to production deploy configs
+# Checks: Dockerfiles, docker-compose, cloudbuild, k8s manifests, deploy scripts, .env files
+echo "  security: auth bypass guard"
+bypass_found=$(grep -r "TEST_BYPASS_AUTH\|ALLOW_TEST_AUTH" \
+  Dockerfile* docker-compose* cloudbuild* \
+  2>/dev/null || true)
+# Also check yaml files that look deploy-related
+yaml_found=$(grep -r "TEST_BYPASS_AUTH\|ALLOW_TEST_AUTH" \
+  --include="*.yml" --include="*.yaml" \
+  . 2>/dev/null | grep -E "(deploy|k8s|kubernetes|helm|cloudbuild|docker-compose)" || true)
+# Check staged .env files (shouldn't be committed anyway, but belt-and-suspenders)
+env_found=$(git diff --cached --name-only | grep -E '\.env$' | xargs -r grep -l "TEST_BYPASS_AUTH\|ALLOW_TEST_AUTH" 2>/dev/null || true)
+
+if [ -n "$bypass_found" ] || [ -n "$yaml_found" ] || [ -n "$env_found" ]; then
+  echo "❌ SECURITY BLOCKER: TEST_BYPASS_AUTH / ALLOW_TEST_AUTH found in shippable files!"
+  echo ""
+  [ -n "$bypass_found" ] && echo "Found in Docker/deploy files:" && echo "$bypass_found" && echo ""
+  [ -n "$yaml_found" ] && echo "Found in YAML deploy configs:" && echo "$yaml_found" && echo ""
+  [ -n "$env_found" ] && echo "Found in staged .env files:" && echo "$env_found" && echo ""
+  echo "Auth bypass code MUST NEVER ship to production."
+  echo "Remove TEST_BYPASS_AUTH from all deploy-related files before committing."
+  exit 1
+fi
+
+# backend: venv check + ruff + pytest
+if [ ! -x backend/.venv/bin/python ]; then
+  echo "❌ backend/.venv missing – run: cd backend && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-test.txt"; exit 1
+fi
+echo "  backend: ruff"
+(cd backend && .venv/bin/python -m ruff check . 2>&1) || { echo "❌ ruff failed"; exit 1; }
+
+echo "  backend: pytest"
+(cd backend && .venv/bin/python -m pytest -q -W ignore) || { echo "❌ pytest failed"; exit 1; }
+
+# frontend: eslint
+if [ -d frontend/node_modules ]; then
+  echo "  frontend: eslint"
+  if [ -x frontend/node_modules/.bin/eslint ]; then
+    (cd frontend && ./node_modules/.bin/eslint src --ext .js,.jsx 2>&1) || { echo "❌ eslint failed"; exit 1; }
+  else
+    echo "  eslint binary missing – run npm install / bun install"; exit 1
+  fi
+else
+  echo "❌ frontend/node_modules missing – run npm install (or bun install in sandbox)"; exit 1
+fi
+
+# frontend: node:test
+echo "  frontend: test (vitest)"
+(cd frontend && ./node_modules/.bin/vitest run 2>&1) || { echo "❌ frontend test failed"; exit 1; }
+
+echo "✓ pre-commit checks passed"
