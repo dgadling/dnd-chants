@@ -50,6 +50,8 @@ jobs:
             --cpu=0.25 \
             --concurrency=1 \
             --cpu-throttling \
-            --set-env-vars="DISCORD_CLIENT_ID=${{ secrets.DISCORD_CLIENT_ID }},NODE_ENV=production" \
-            --set-secrets="DISCORD_CLIENT_SECRET=discord_client_secret:latest,DISCORD_CLIENT_ID=discord_client_id:latest,GOOGLE_TRANSLATE_API_KEY=google_translate_api_key:latest" \
+            --set-env-vars="NODE_ENV=production" \
             --quiet
+          # Discord auth disabled for now – when re-enabled add:
+          # --set-env-vars="DISCORD_CLIENT_ID=...,DISCORD_REDIRECT_URI=...,SUPERUSER_DISCORD_ID=...,NODE_ENV=production"
+          # --set-secrets="DISCORD_CLIENT_SECRET=discord_client_secret:latest,DISCORD_OAUTH_FERNET_KEY=discord_oauth_fernet_key:latest,SESSION_SECRET=session_secret:latest,GOOGLE_TRANSLATE_API_KEY=google_translate_api_key:latest"
