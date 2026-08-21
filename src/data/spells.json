@@ -1,0 +1,1188 @@
+{
+  "Illusion": [
+    {
+      "name": "Fear",
+      "school": "Illusion",
+      "isJex": true,
+      "chant": "Ru'b Azim",
+      "chant_native": "رعب عظيم",
+      "chant_literal": "great terror",
+      "lang_name": "Classical Arabic",
+      "lang_code": "ar"
+    },
+    {
+      "name": "Greater Invisibility",
+      "school": "Illusion",
+      "isJex": true,
+      "chant": "Khafa Azam",
+      "chant_native": "خفاء أعظم",
+      "chant_literal": "great hidden",
+      "lang_name": "Classical Arabic",
+      "lang_code": "ar"
+    },
+    {
+      "name": "Mirror Image",
+      "school": "Illusion",
+      "isJex": true,
+      "chant": "Tayf Maraya",
+      "chant_native": "طيف مرايا",
+      "chant_literal": "specter of mirrors",
+      "lang_name": "Classical Arabic",
+      "lang_code": "ar"
+    },
+    {
+      "name": "Disguise Self",
+      "school": "Illusion",
+      "isJex": false,
+      "chant": "Sirr Self",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Classical Arabic",
+      "lang_code": "ar"
+    },
+    {
+      "name": "Invisibility",
+      "school": "Illusion",
+      "isJex": false,
+      "chant": "Sirr Invisibility",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Classical Arabic",
+      "lang_code": "ar"
+    },
+    {
+      "name": "Seeming",
+      "school": "Illusion",
+      "isJex": false,
+      "chant": "Sirr Seeming",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Classical Arabic",
+      "lang_code": "ar"
+    }
+  ],
+  "Abjuration": [
+    {
+      "name": "Dispel Magic",
+      "school": "Abjuration",
+      "isJex": true,
+      "chant": "Hafar Kesem",
+      "chant_native": "הפר קסם",
+      "chant_literal": "break spell",
+      "lang_name": "Hebrew",
+      "lang_code": "iw"
+    },
+    {
+      "name": "Globe of Invulnerability",
+      "school": "Abjuration",
+      "isJex": true,
+      "chant": "Kipat Magen",
+      "chant_native": "כיפת מגן",
+      "chant_literal": "dome of shield",
+      "lang_name": "Hebrew",
+      "lang_code": "iw"
+    },
+    {
+      "name": "Shield",
+      "school": "Abjuration",
+      "isJex": true,
+      "chant": "Magen Or",
+      "chant_native": "מגן אור",
+      "chant_literal": "shield of light",
+      "lang_name": "Hebrew",
+      "lang_code": "iw"
+    },
+    {
+      "name": "Aid",
+      "school": "Abjuration",
+      "isJex": false,
+      "chant": "Kefel Aid",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Hebrew",
+      "lang_code": "iw"
+    },
+    {
+      "name": "Aura of Vitality",
+      "school": "Abjuration",
+      "isJex": false,
+      "chant": "Kefel Aura",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Hebrew",
+      "lang_code": "iw"
+    },
+    {
+      "name": "Banishment",
+      "school": "Abjuration",
+      "isJex": false,
+      "chant": "Kefel Banishment",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Hebrew",
+      "lang_code": "iw"
+    },
+    {
+      "name": "Cure Wounds",
+      "school": "Abjuration",
+      "isJex": false,
+      "chant": "Kefel Cure",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Hebrew",
+      "lang_code": "iw"
+    },
+    {
+      "name": "Glyph of Warding",
+      "school": "Abjuration",
+      "isJex": false,
+      "chant": "Kefel Glyph",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Hebrew",
+      "lang_code": "iw"
+    },
+    {
+      "name": "Greater Restoration",
+      "school": "Abjuration",
+      "isJex": false,
+      "chant": "Kefel Greater",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Hebrew",
+      "lang_code": "iw"
+    },
+    {
+      "name": "Mind Blank",
+      "school": "Abjuration",
+      "isJex": false,
+      "chant": "Kefel Mind",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Hebrew",
+      "lang_code": "iw"
+    },
+    {
+      "name": "Prayer of Healing",
+      "school": "Abjuration",
+      "isJex": false,
+      "chant": "Kefel Prayer",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Hebrew",
+      "lang_code": "iw"
+    },
+    {
+      "name": "Resistance",
+      "school": "Abjuration",
+      "isJex": false,
+      "chant": "Kefel Resistance",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Hebrew",
+      "lang_code": "iw"
+    },
+    {
+      "name": "Shield of Faith",
+      "school": "Abjuration",
+      "isJex": false,
+      "chant": "Kefel Shield",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Hebrew",
+      "lang_code": "iw"
+    }
+  ],
+  "Evocation": [
+    {
+      "name": "Bigby's Hand",
+      "school": "Evocation",
+      "isJex": true,
+      "chant": "Kulak",
+      "chant_native": "Кулак",
+      "chant_literal": "fist",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Chromatic Orb",
+      "school": "Evocation",
+      "isJex": true,
+      "chant": "Tsvet",
+      "chant_native": "Цвет",
+      "chant_literal": "color",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Cone of Cold",
+      "school": "Evocation",
+      "isJex": true,
+      "chant": "Kholod",
+      "chant_native": "Холод",
+      "chant_literal": "cold",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Crown of Stars",
+      "school": "Evocation",
+      "isJex": true,
+      "chant": "Venets",
+      "chant_native": "Венец",
+      "chant_literal": "crown",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Faerie Fire",
+      "school": "Evocation",
+      "isJex": true,
+      "chant": "Ogon",
+      "chant_native": "Огонь",
+      "chant_literal": "fire",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Fireball",
+      "school": "Evocation",
+      "isJex": true,
+      "chant": "Yar",
+      "chant_native": "Яр",
+      "chant_literal": "bright",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Lightning Bolt",
+      "school": "Evocation",
+      "isJex": true,
+      "chant": "Molni",
+      "chant_native": "Молни",
+      "chant_literal": "lightning",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Magic Missile",
+      "school": "Evocation",
+      "isJex": true,
+      "chant": "Strela",
+      "chant_native": "Стрела",
+      "chant_literal": "arrow",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Meteor Swarm",
+      "school": "Evocation",
+      "isJex": true,
+      "chant": "Zvezd",
+      "chant_native": "Звезд",
+      "chant_literal": "star",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Ray of Frost",
+      "school": "Evocation",
+      "isJex": true,
+      "chant": "Luch",
+      "chant_native": "Луч",
+      "chant_literal": "beam",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Shocking Grasp",
+      "school": "Evocation",
+      "isJex": true,
+      "chant": "Razryad",
+      "chant_native": "Разряд",
+      "chant_literal": "discharge",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Sorcerous Burst",
+      "school": "Evocation",
+      "isJex": true,
+      "chant": "Vspyshka",
+      "chant_native": "Вспышка",
+      "chant_literal": "flash-burst",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Wall of Fire",
+      "school": "Evocation",
+      "isJex": true,
+      "chant": "Plam",
+      "chant_native": "Плам",
+      "chant_literal": "flame",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Wall of Force",
+      "school": "Evocation",
+      "isJex": true,
+      "chant": "Sil",
+      "chant_native": "Сил",
+      "chant_literal": "force",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Wall of Stone",
+      "school": "Evocation",
+      "isJex": true,
+      "chant": "Kamnya",
+      "chant_native": "Камня",
+      "chant_literal": "stone",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Blade Barrier",
+      "school": "Evocation",
+      "isJex": false,
+      "chant": "Zar Blade",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Destructive Wave",
+      "school": "Evocation",
+      "isJex": false,
+      "chant": "Zar Destructive",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Divine Smite",
+      "school": "Evocation",
+      "isJex": false,
+      "chant": "Zar Divine",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Divine Word",
+      "school": "Evocation",
+      "isJex": false,
+      "chant": "Zar Divine",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Fire Bolt",
+      "school": "Evocation",
+      "isJex": false,
+      "chant": "Zar Fire",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Guiding Bolt",
+      "school": "Evocation",
+      "isJex": false,
+      "chant": "Zar Guiding",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Gust of Wind",
+      "school": "Evocation",
+      "isJex": false,
+      "chant": "Zar Gust",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Holy Weapon",
+      "school": "Evocation",
+      "isJex": false,
+      "chant": "Zar Holy",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Leomund's Tiny Hut",
+      "school": "Evocation",
+      "isJex": false,
+      "chant": "Zar Leomund's",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Mass Heal",
+      "school": "Evocation",
+      "isJex": false,
+      "chant": "Zar Mass",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Sacred Flame",
+      "school": "Evocation",
+      "isJex": false,
+      "chant": "Zar Sacred",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Searing Smite",
+      "school": "Evocation",
+      "isJex": false,
+      "chant": "Zar Searing",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Spiritual Weapon",
+      "school": "Evocation",
+      "isJex": false,
+      "chant": "Zar Spiritual",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Thunderous Smite",
+      "school": "Evocation",
+      "isJex": false,
+      "chant": "Zar Thunderous",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Wall of Water",
+      "school": "Evocation",
+      "isJex": false,
+      "chant": "Zar Wall",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    },
+    {
+      "name": "Word of Radiance",
+      "school": "Evocation",
+      "isJex": false,
+      "chant": "Zar Word",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Russian",
+      "lang_code": "ru"
+    }
+  ],
+  "Enchantment": [
+    {
+      "name": "Bane",
+      "school": "Enchantment",
+      "isJex": true,
+      "chant": "Mala Sorte",
+      "chant_native": "Mala Sorte",
+      "chant_literal": "bad fate",
+      "lang_name": "Italian",
+      "lang_code": "it"
+    },
+    {
+      "name": "Charm Monster",
+      "school": "Enchantment",
+      "isJex": true,
+      "chant": "Cuore Dolce",
+      "chant_native": "Cuore Dolce",
+      "chant_literal": "sweet heart",
+      "lang_name": "Italian",
+      "lang_code": "it"
+    },
+    {
+      "name": "Command",
+      "school": "Enchantment",
+      "isJex": true,
+      "chant": "Obbedisci",
+      "chant_native": "Obbedisci",
+      "chant_literal": "obey",
+      "lang_name": "Italian",
+      "lang_code": "it"
+    },
+    {
+      "name": "Dominate Monster",
+      "school": "Enchantment",
+      "isJex": true,
+      "chant": "Domina Belva",
+      "chant_native": "Domina Belva",
+      "chant_literal": "tame beast",
+      "lang_name": "Italian",
+      "lang_code": "it"
+    },
+    {
+      "name": "Hold Monster",
+      "school": "Enchantment",
+      "isJex": true,
+      "chant": "Ferma Fiera",
+      "chant_native": "Ferma Fiera",
+      "chant_literal": "halt beast",
+      "lang_name": "Italian",
+      "lang_code": "it"
+    },
+    {
+      "name": "Mass Suggestion",
+      "school": "Enchantment",
+      "isJex": true,
+      "chant": "Coro Voci",
+      "chant_native": "Coro Voci",
+      "chant_literal": "choir of voices",
+      "lang_name": "Italian",
+      "lang_code": "it"
+    },
+    {
+      "name": "Mind Sliver",
+      "school": "Enchantment",
+      "isJex": true,
+      "chant": "Spillo Mente",
+      "chant_native": "Spillo Mente",
+      "chant_literal": "mind needle",
+      "lang_name": "Italian",
+      "lang_code": "it"
+    },
+    {
+      "name": "Suggestion",
+      "school": "Enchantment",
+      "isJex": true,
+      "chant": "Sussurro Vero",
+      "chant_native": "Sussurro Vero",
+      "chant_literal": "true whisper",
+      "lang_name": "Italian",
+      "lang_code": "it"
+    },
+    {
+      "name": "Synaptic Static",
+      "school": "Enchantment",
+      "isJex": true,
+      "chant": "Mente Frantuma",
+      "chant_native": "Mente Frantuma",
+      "chant_literal": "mind shatter",
+      "lang_name": "Italian",
+      "lang_code": "it"
+    },
+    {
+      "name": "Tasha's Hideous Laughter",
+      "school": "Enchantment",
+      "isJex": true,
+      "chant": "Risa Folle",
+      "chant_native": "Risa Folle",
+      "chant_literal": "crazy laugh",
+      "lang_name": "Italian",
+      "lang_code": "it"
+    },
+    {
+      "name": "Vicious Mockery",
+      "school": "Enchantment",
+      "isJex": true,
+      "chant": "Beffa Cruda",
+      "chant_native": "Beffa Cruda",
+      "chant_literal": "cruel mock",
+      "lang_name": "Italian",
+      "lang_code": "it"
+    },
+    {
+      "name": "Silvery Barbs",
+      "school": "Enchantment",
+      "isJex": false,
+      "chant": "Incanto Silvery",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Italian",
+      "lang_code": "it"
+    },
+    {
+      "name": "Staggering Smite",
+      "school": "Enchantment",
+      "isJex": false,
+      "chant": "Incanto Staggering",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Italian",
+      "lang_code": "it"
+    },
+    {
+      "name": "Zone of Truth",
+      "school": "Enchantment",
+      "isJex": false,
+      "chant": "Incanto Zone",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Italian",
+      "lang_code": "it"
+    }
+  ],
+  "Divination": [
+    {
+      "name": "Arcane Eye",
+      "school": "Divination",
+      "isJex": true,
+      "chant": "Guhya Netra",
+      "chant_native": "गुह्य नेत्र",
+      "chant_literal": "secret eye",
+      "lang_name": "Hindi",
+      "lang_code": "hi"
+    },
+    {
+      "name": "Detect Magic",
+      "school": "Divination",
+      "isJex": true,
+      "chant": "Mantra Darshi",
+      "chant_native": "मंत्र दर्शी",
+      "chant_literal": "spell seer",
+      "lang_name": "Hindi",
+      "lang_code": "hi"
+    },
+    {
+      "name": "Detect Thoughts",
+      "school": "Divination",
+      "isJex": true,
+      "chant": "Chitta Drishti",
+      "chant_native": "चित्त दृष्टि",
+      "chant_literal": "mind sight",
+      "lang_name": "Hindi",
+      "lang_code": "hi"
+    },
+    {
+      "name": "Legend Lore",
+      "school": "Divination",
+      "isJex": true,
+      "chant": "Purana Smriti",
+      "chant_native": "पुराण स्मृति",
+      "chant_literal": "ancient memory",
+      "lang_name": "Hindi",
+      "lang_code": "hi"
+    },
+    {
+      "name": "Speak with Animals",
+      "school": "Divination",
+      "isJex": true,
+      "chant": "Pashu Vani",
+      "chant_native": "पशु वाणी",
+      "chant_literal": "animal speech",
+      "lang_name": "Hindi",
+      "lang_code": "hi"
+    },
+    {
+      "name": "Comprehend Languages",
+      "school": "Divination",
+      "isJex": false,
+      "chant": "Jnana Comprehend",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Hindi",
+      "lang_code": "hi"
+    },
+    {
+      "name": "Contact Other Plane",
+      "school": "Divination",
+      "isJex": false,
+      "chant": "Jnana Contact",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Hindi",
+      "lang_code": "hi"
+    },
+    {
+      "name": "Guidance",
+      "school": "Divination",
+      "isJex": false,
+      "chant": "Jnana Guidance",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Hindi",
+      "lang_code": "hi"
+    },
+    {
+      "name": "Identify",
+      "school": "Divination",
+      "isJex": false,
+      "chant": "Jnana Identify",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Hindi",
+      "lang_code": "hi"
+    },
+    {
+      "name": "Rary's Telepathic Bond",
+      "school": "Divination",
+      "isJex": false,
+      "chant": "Jnana Rary's",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Hindi",
+      "lang_code": "hi"
+    },
+    {
+      "name": "True Seeing",
+      "school": "Divination",
+      "isJex": false,
+      "chant": "Jnana True",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Hindi",
+      "lang_code": "hi"
+    }
+  ],
+  "Transmutation": [
+    {
+      "name": "Alter Self",
+      "school": "Transmutation",
+      "isJex": true,
+      "chant": "Wandel Ich",
+      "chant_native": "Wandel Ich",
+      "chant_literal": "change I",
+      "lang_name": "German",
+      "lang_code": "de"
+    },
+    {
+      "name": "Dragon's Breath",
+      "school": "Transmutation",
+      "isJex": true,
+      "chant": "Drachen Atem",
+      "chant_native": "Drachen Atem",
+      "chant_literal": "dragon breath",
+      "lang_name": "German",
+      "lang_code": "de"
+    },
+    {
+      "name": "Fly",
+      "school": "Transmutation",
+      "isJex": true,
+      "chant": "Flug Wind",
+      "chant_native": "Flug Wind",
+      "chant_literal": "flight wind",
+      "lang_name": "German",
+      "lang_code": "de"
+    },
+    {
+      "name": "Levitate",
+      "school": "Transmutation",
+      "isJex": true,
+      "chant": "Schwebe Wort",
+      "chant_native": "Schwebe Wort",
+      "chant_literal": "float word",
+      "lang_name": "German",
+      "lang_code": "de"
+    },
+    {
+      "name": "Prestidigitation",
+      "school": "Transmutation",
+      "isJex": true,
+      "chant": "Finger Spiel",
+      "chant_native": "Finger Spiel",
+      "chant_literal": "finger play",
+      "lang_name": "German",
+      "lang_code": "de"
+    },
+    {
+      "name": "Control Water",
+      "school": "Transmutation",
+      "isJex": false,
+      "chant": "Wandl Control",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "German",
+      "lang_code": "de"
+    },
+    {
+      "name": "Create or Destroy Water",
+      "school": "Transmutation",
+      "isJex": false,
+      "chant": "Wandl Create",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "German",
+      "lang_code": "de"
+    },
+    {
+      "name": "Gust",
+      "school": "Transmutation",
+      "isJex": false,
+      "chant": "Wandl Gust",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "German",
+      "lang_code": "de"
+    },
+    {
+      "name": "Mending",
+      "school": "Transmutation",
+      "isJex": false,
+      "chant": "Wandl Mending",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "German",
+      "lang_code": "de"
+    },
+    {
+      "name": "Move Earth",
+      "school": "Transmutation",
+      "isJex": false,
+      "chant": "Wandl Move",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "German",
+      "lang_code": "de"
+    },
+    {
+      "name": "Regenerate",
+      "school": "Transmutation",
+      "isJex": false,
+      "chant": "Wandl Regenerate",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "German",
+      "lang_code": "de"
+    },
+    {
+      "name": "Stone Shape",
+      "school": "Transmutation",
+      "isJex": false,
+      "chant": "Wandl Stone",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "German",
+      "lang_code": "de"
+    },
+    {
+      "name": "Thaumaturgy",
+      "school": "Transmutation",
+      "isJex": false,
+      "chant": "Wandl Thaumaturgy",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "German",
+      "lang_code": "de"
+    },
+    {
+      "name": "Water Walk",
+      "school": "Transmutation",
+      "isJex": false,
+      "chant": "Wandl Water",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "German",
+      "lang_code": "de"
+    }
+  ],
+  "Conjuration": [
+    {
+      "name": "Mage Hand",
+      "school": "Conjuration",
+      "isJex": true,
+      "chant": "Stór Hönd",
+      "chant_native": "Stór Hönd",
+      "chant_literal": "great hand",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Misty Step",
+      "school": "Conjuration",
+      "isJex": true,
+      "chant": "Þoku Skref",
+      "chant_native": "Þoku Skref",
+      "chant_literal": "mist step",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Summon Dragon",
+      "school": "Conjuration",
+      "isJex": true,
+      "chant": "Kalla Dreka",
+      "chant_native": "Kalla Dreka",
+      "chant_literal": "call dragon",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Call Lightning",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Lightning",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Create Food and Water",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Water",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Drawmij's Instant Summons",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Summons",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Find Familiar",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Familiar",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Find Steed",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Steed",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Fog Cloud",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Cloud",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Galder's Tower",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Tower",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Gate",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Gate",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Heroes' Feast",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Feast",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Mordenkainen's Faithful Hound",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Hound",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Mordenkainen's Magnificent Mansion",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Mansion",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Planar Ally",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Ally",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Spirit Guardians",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Guardians",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Summon Elemental",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Elemental",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Summon Fey",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Fey",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Temple of the Gods",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Gods",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Tenser's Floating Disk",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Disk",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    },
+    {
+      "name": "Unseen Servant",
+      "school": "Conjuration",
+      "isJex": false,
+      "chant": "Azag Servant",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Icelandic",
+      "lang_code": "is"
+    }
+  ],
+  "Necromancy": [
+    {
+      "name": "Ray of Enfeeblement",
+      "school": "Necromancy",
+      "isJex": true,
+      "chant": "Infirma",
+      "chant_native": "Infirma",
+      "chant_literal": "weaken",
+      "lang_name": "Church Latin",
+      "lang_code": "la"
+    },
+    {
+      "name": "Astral Projection",
+      "school": "Necromancy",
+      "isJex": false,
+      "chant": "Umbra Astral",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Church Latin",
+      "lang_code": "la"
+    },
+    {
+      "name": "Clone",
+      "school": "Necromancy",
+      "isJex": false,
+      "chant": "Umbra Clone",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Church Latin",
+      "lang_code": "la"
+    },
+    {
+      "name": "Contagion",
+      "school": "Necromancy",
+      "isJex": false,
+      "chant": "Umbra Contagion",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Church Latin",
+      "lang_code": "la"
+    },
+    {
+      "name": "Inflict Wounds",
+      "school": "Necromancy",
+      "isJex": false,
+      "chant": "Umbra Inflict",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Church Latin",
+      "lang_code": "la"
+    },
+    {
+      "name": "Spare the Dying",
+      "school": "Necromancy",
+      "isJex": false,
+      "chant": "Umbra Spare",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Church Latin",
+      "lang_code": "la"
+    },
+    {
+      "name": "Toll the Dead",
+      "school": "Necromancy",
+      "isJex": false,
+      "chant": "Umbra Toll",
+      "chant_native": "",
+      "chant_literal": "",
+      "lang_name": "Church Latin",
+      "lang_code": "la"
+    }
+  ]
+}
