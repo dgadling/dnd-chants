@@ -1,4 +1,4 @@
-/* client-side DDB fetching – fully static, no /api/dndbeyond proxy */
+/* client-side DDB fetching – prefers same-origin /api/dndbeyond proxy (Firebase Functions) to avoid CORS, fallback to direct */
 export type DdbSpellEntry = {
   name: string;
   school: string;
@@ -87,6 +87,33 @@ function collectSpells(char: any): DdbSpellEntry[] {
   return out;
 }
 
+async function tryProxyFetch(charId: string): Promise<any | null> {
+  // same-origin proxy via Firebase Hosting rewrite -> Functions dndbeyondProxy
+  // works on https://chants-506202.web.app and localhost when emulated, not on web artifact preview origin
+  if (typeof window === "undefined") return null;
+  const proxyUrls = [
+    `/api/dndbeyond/${charId}`,
+    `/api/dndbeyond?id=${charId}`,
+  ];
+  for (const u of proxyUrls) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(u, { method: "GET", headers: { Accept: "application/json" }, signal: controller.signal as any });
+      clearTimeout(timer);
+      if (!res.ok) continue;
+      const j = await res.json() as any;
+      // proxy returns shape {characterId, characterName, spells, lastModified, fetchTime, totalSpells}
+      if (j && j.spells && Array.isArray(j.spells)) return { fromProxy: true, data: j };
+      // if proxy returned raw char (fallback), handle below
+      if (j && (j.data || j.name)) return { fromProxy: false, raw: j };
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
 export async function fetchCharacterClient(idOrUrl: string): Promise<{
   characterId: string;
   characterName: string;
@@ -97,6 +124,26 @@ export async function fetchCharacterClient(idOrUrl: string): Promise<{
 }> {
   const charId = extractId(idOrUrl);
   if (!charId) throw new Error("could not extract character id – paste D&D Beyond URL like https://www.dndbeyond.com/characters/12345678 or numeric id");
+
+  // 1. Try same-origin proxy first (avoids CORS)
+  try {
+    const proxied = await tryProxyFetch(charId);
+    if (proxied && proxied.fromProxy && proxied.data) {
+      const j = proxied.data;
+      return {
+        characterId: String(j.characterId || charId),
+        characterName: j.characterName || j.name || "",
+        spells: (j.spells || []).map((s: any) => ({ name: s.name, school: s.school })),
+        lastModified: j.lastModified || null,
+        fetchTime: j.fetchTime || new Date().toISOString(),
+        totalSpells: j.totalSpells ?? j.spells?.length ?? 0,
+      };
+    }
+  } catch {
+    // fall through to direct
+  }
+
+  // 2. Fallback direct browser fetch (will be blocked by CORS on most origins – kept for local dev / artifact preview with mock)
   const fetchUrl = `https://character-service.dndbeyond.com/character/v5/character/${charId}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);
