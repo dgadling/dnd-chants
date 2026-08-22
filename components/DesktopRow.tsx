@@ -1,9 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { formatBox, parseBox, getLangName } from "@/lib/lang";
-import { playCachedAudio } from "@/lib/audio";
-import { translateClient } from "@/lib/translate-client";
+import { useSpellRow } from "@/hooks/useSpellRow";
 
 type Spell = {
   name: string;
@@ -22,89 +19,21 @@ type Props = {
 };
 
 export function DesktopRow(props: Props) {
-  const { spell, targetLang, school, initialInput, initialNative, initialRoman, onSave, helpTemplate } = props;
-  const [input, setInput] = useState(initialInput || "");
-  const [boxText, setBoxText] = useState(() => formatBox(initialNative, initialRoman));
-  const [isTranslating, setIsTranslating] = useState(false);
-  const [transError, setTransError] = useState<string>("");
-  const lastTranslatedRef = useRef<string>("");
+  const {
+    input,
+    boxText,
+    effectiveNative,
+    isTranslating,
+    transError,
+    langName,
+    handleInputChange,
+    handleBoxChange,
+    handleTranslate,
+    handlePlay,
+    handleIdiom,
+  } = useSpellRow(props);
 
-  // sync input when preload arrives
-  useEffect(() => {
-    if (initialInput && initialInput !== input) {
-      setInput(initialInput);
-    }
-  }, [initialInput]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (initialNative && !boxText.trim()) {
-      setBoxText(formatBox(initialNative, initialRoman));
-    }
-  }, [initialNative, initialRoman]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const parsed = parseBox(boxText);
-  const effectiveNative = parsed.native;
-  const effectiveRoman = parsed.roman;
-
-  const autosave = useCallback((enPhrase: string, nat: string, rom: string) => {
-    if (!onSave) return;
-    const ep = enPhrase.trim().slice(0, 500);
-    const n = nat.slice(0, 1000);
-    const r = rom.slice(0, 1000);
-    if (!ep && !n) return;
-    onSave(ep, n, r);
-  }, [onSave]);
-
-  const handleInputChange = (v: string) => {
-    setInput(v);
-    autosave(v, effectiveNative, effectiveRoman);
-  };
-
-  const handleBoxChange = (v: string) => {
-    setBoxText(v);
-    const p = parseBox(v);
-    autosave(input, p.native, p.roman);
-  };
-
-  const handleTranslate = useCallback(async () => {
-    const trimmed = input.trim();
-    if (!trimmed) return;
-    const norm = trimmed.toLowerCase();
-    if (norm === lastTranslatedRef.current && effectiveNative) return;
-    if (norm === lastTranslatedRef.current && isTranslating) return;
-    setIsTranslating(true);
-    setTransError("");
-    try {
-      const j = await translateClient("en", targetLang, trimmed);
-      const newNative = (j.translated as string || "").slice(0, 500);
-      const newRoman = (j.romanized as string || "").slice(0, 500);
-      const formatted = formatBox(newNative, newRoman);
-      setBoxText(formatted);
-      autosave(trimmed, newNative, newRoman);
-      lastTranslatedRef.current = norm;
-    } catch (e: any) {
-      setTransError(String(e?.message || e).slice(0, 80));
-    } finally {
-      setIsTranslating(false);
-    }
-  }, [input, targetLang, effectiveNative, isTranslating, autosave]);
-
-  const handlePlay = useCallback(() => {
-    const toSpeak = effectiveNative;
-    if (!toSpeak) return;
-    void playCachedAudio(toSpeak, targetLang);
-  }, [effectiveNative, targetLang]);
-
-  const DEFAULT_TMPL = "Help me come up with a short chant or idiom for the Dungeons & Dragons spell {spell} in {language} that would sound reasonable to a native speaker.";
-  const handleIdiom = () => {
-    const langName = getLangName(targetLang);
-    const raw = helpTemplate && helpTemplate.trim() ? helpTemplate : DEFAULT_TMPL;
-    const hasPlace = raw.includes("{spell}") || raw.includes("{language}") || raw.includes("{school}");
-    const q = hasPlace
-      ? raw.replaceAll("{spell}", spell.name).replaceAll("{language}", langName).replaceAll("{school}", school)
-      : raw;
-    window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, "_blank", "popup,width=900,height=700");
-  };
+  const { spell } = props;
 
   return (
     <tr className="border-b border-default">
@@ -157,7 +86,7 @@ export function DesktopRow(props: Props) {
             disabled={!effectiveNative}
             onClick={handlePlay}
             type="button"
-            title={effectiveNative ? `speak in ${targetLang}` : "no translation yet"}
+            title={effectiveNative ? `speak in ${props.targetLang}` : "no translation yet"}
           >
             🔊
           </button>
@@ -166,7 +95,7 @@ export function DesktopRow(props: Props) {
             className="inline-flex h-8 w-8 min-w-[32px] shrink-0 items-center justify-center rounded-md border text-sm align-middle bg-surface border-default text-primary bg-surface-hover"
             onClick={handleIdiom}
             type="button"
-            title={`Brainstorm with Google for ${spell.name} in ${getLangName(targetLang)}`}
+            title={`Brainstorm with Google for ${spell.name} in ${langName}`}
           >
             💬
           </button>
