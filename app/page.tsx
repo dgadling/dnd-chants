@@ -668,11 +668,19 @@ export default function LabPage() {
                 <div className="space-y-2">
                   {backup.user.discord ? (
                     <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-zinc-900/60 border border-zinc-700/40">
-                      <div className="h-6 w-6 rounded-full bg-indigo-500 grid place-items-center text-[11px] font-bold text-white">
-                        {backup.user.discord.username ? backup.user.discord.username.slice(0,1).toUpperCase() : "D"}
-                      </div>
+                      {backup.user.discord.avatar ? (
+                        <img
+                          src={`https://cdn.discordapp.com/avatars/${backup.user.discord.id}/${backup.user.discord.avatar}.png?size=64`}
+                          alt={backup.user.discord.username || "Discord"}
+                          className="h-6 w-6 rounded-full object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="h-6 w-6 rounded-full bg-indigo-500 grid place-items-center text-[11px] font-bold text-white shrink-0">
+                          {backup.user.discord.username ? backup.user.discord.username.slice(0,1).toUpperCase() : "D"}
+                        </div>
+                      )}
                       <div className="min-w-0 flex-1">
-                        <div className="text-[12px] font-medium text-zinc-200 truncate">{backup.user.discord.username || `Discord ${backup.user.discord.id}`}</div>
+                        <div className="text-[12px] font-medium text-zinc-200 truncate">{backup.user.discord.username || "Discord user"}</div>
                         <div className="text-[10px] text-zinc-500">Backup enabled</div>
                       </div>
                     </div>

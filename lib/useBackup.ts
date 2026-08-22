@@ -5,6 +5,7 @@ import { deriveKeyFromPin, exportKeyToBase64, importKeyFromBase64, STORAGE_BACKU
 import { isAllowedOrigin, STORAGE_BACKUP_ENABLED, STORAGE_LAST_BACKUP, backupToCloud, restoreFromCloud, deleteCloudBackup, disableBackupsLocal } from "@/lib/backup";
 
 type DiscordUser = { id: string; username: string; avatar?: string|null }|null;
+const STORAGE_DISCORD_USER = "dnd-chant-discord-user-v1";
 
 export function useBackup(opts: { characters:any[]; schoolLangsPerChar:Record<string,any>; extrasPerChar:Record<string,any>; activeId:string; helpTemplate:string }) {
   const [user,setUser]=useState<{firebase:any;discord:DiscordUser}>({firebase:null,discord:null});
@@ -12,14 +13,16 @@ export function useBackup(opts: { characters:any[]; schoolLangsPerChar:Record<st
   const [ui,setUi]=useState<{showEnableBackups:boolean;lastBackupISO:string|null;backupEnabled:boolean}>({showEnableBackups:false,lastBackupISO:null,backupEnabled:false});
   const [pinDialog,setPinDialog]=useState<{open:boolean;mode:"backup"|"restore";resolve?:(pin:string|null)=>void}>({open:false,mode:"backup"});
 
-  useEffect(()=>{ let unsub:(()=>void)|null=null; try{ unsub=onAuthChanged(fb=>{ if(fb){ setUser(p=>({firebase:fb,discord:p.discord|| (fb as any).uid?.startsWith("discord:")?{id:(fb as any).uid.slice(8),username:""}:null })); setUi(p=>({...p,backupEnabled:true})); try{localStorage.setItem(STORAGE_BACKUP_ENABLED,"1");}catch{} } else setUser(p=>({firebase:null,discord:p.discord})); }); }catch{} return()=>{ if(unsub) unsub(); }; },[]);
+  useEffect(()=>{ let unsub:(()=>void)|null=null; try{ unsub=onAuthChanged(fb=>{ if(fb){ 
+    let restored: DiscordUser=null; try{ const raw=localStorage.getItem(STORAGE_DISCORD_USER); if(raw){ const j=JSON.parse(raw); if(j?.id) restored={id:String(j.id),username:String(j.username||""),avatar:j.avatar||null}; } }catch{}
+    setUser(p=>({firebase:fb,discord:p.discord||restored|| (fb as any).uid?.startsWith("discord:")?{id:(fb as any).uid.slice(8),username:restored?.username||"" ,avatar:restored?.avatar||null}:null })); setUi(p=>({...p,backupEnabled:true})); try{localStorage.setItem(STORAGE_BACKUP_ENABLED,"1");}catch{} } else setUser(p=>({firebase:null,discord:p.discord})); }); }catch{} return()=>{ if(unsub) unsub(); }; },[]);
 
   useEffect(()=>{
-    try{ if(localStorage.getItem(STORAGE_BACKUP_ENABLED)==="1") setUi(p=>({...p,backupEnabled:true})); const lb=localStorage.getItem(STORAGE_LAST_BACKUP); if(lb) setUi(p=>({...p,lastBackupISO:lb})); }catch{}
+    try{ if(localStorage.getItem(STORAGE_BACKUP_ENABLED)==="1") setUi(p=>({...p,backupEnabled:true})); const lb=localStorage.getItem(STORAGE_LAST_BACKUP); if(lb) setUi(p=>({...p,lastBackupISO:lb})); const du=localStorage.getItem(STORAGE_DISCORD_USER); if(du){ const j=JSON.parse(du); if(j?.id) setUser(p=>({firebase:p.firebase,discord:{id:String(j.id),username:String(j.username||""),avatar:j.avatar||null}})); } }catch{}
     const onMessage=async(e:MessageEvent)=>{ if(!isAllowedOrigin(e.origin)) return; const d:any=e.data; if(!d||typeof d!=="object") return;
       if(d.type==="discord-auth-success"&&d.customToken){
         const exp=sessionStorage.getItem("dnd-chant-discord-state"); if(!exp||!d.state||d.state!==exp){ setStatus("Discord state mismatch – try again"); return; }
-        try{ setIsBusy(true); setStatus("Signing in with Discord…"); const fb=await signInWithDiscordCustomToken(d.customToken); setUser({firebase:fb,discord:d.discordUser?{id:d.discordUser.id,username:d.discordUser.username,avatar:d.discordUser.avatar}:null}); setUi(p=>({...p,backupEnabled:true})); try{localStorage.setItem(STORAGE_BACKUP_ENABLED,"1");}catch{}
+        try{ setIsBusy(true); setStatus("Signing in with Discord…"); const fb=await signInWithDiscordCustomToken(d.customToken); const du=d.discordUser?{id:d.discordUser.id,username:d.discordUser.username,avatar:d.discordUser.avatar}:null; setUser({firebase:fb,discord:du}); if(du){ try{localStorage.setItem(STORAGE_DISCORD_USER,JSON.stringify(du));}catch{} } setUi(p=>({...p,backupEnabled:true})); try{localStorage.setItem(STORAGE_BACKUP_ENABLED,"1");}catch{}
           const pending=sessionStorage.getItem("dnd-chant-pending-pin"); if(pending&&/^\d{6}$/.test(pending)){ const uid=(fb as any)?.uid||`discord:${d.discordUser?.id||""}`; const key=await deriveKeyFromPin(pending,uid); localStorage.setItem(STORAGE_BACKUP_KEY,await exportKeyToBase64(key)); setStatus("Backing up…"); try{ await backupToCloud({characters:opts.characters,schoolLangsPerChar:opts.schoolLangsPerChar,extrasPerChar:opts.extrasPerChar,activeId:opts.activeId,helpTemplate:opts.helpTemplate,ddbLink:(()=>{try{return localStorage.getItem("dnd-chant-ddb-link-v1");}catch{return null;}})()},uid,pending); const now=new Date().toISOString(); setUi(p=>({...p,lastBackupISO:now,showEnableBackups:false})); localStorage.setItem(STORAGE_LAST_BACKUP,now); setStatus("Backup enabled and saved"); sessionStorage.removeItem("dnd-chant-pending-pin"); sessionStorage.removeItem("dnd-chant-discord-state"); }catch(err:any){ setStatus(`Backup failed: ${String(err?.message||err).slice(0,200)}`);} } else { setStatus("Discord login complete – set PIN to backup"); setUi(p=>({...p,showEnableBackups:true})); } }catch(err:any){ setStatus(`Discord sign-in failed: ${String(err?.message||err).slice(0,200)}`);} finally{ setIsBusy(false);} } else if(d.type==="discord-auth-error"){ setStatus(`Discord auth failed: ${d.error||"unknown"}`); setIsBusy(false); }
     };
     window.addEventListener("message",onMessage); return()=>window.removeEventListener("message",onMessage);
@@ -37,7 +40,7 @@ export function useBackup(opts: { characters:any[]; schoolLangsPerChar:Record<st
 
   const onDisable=useCallback(async(mode:"disable"|"delete"="disable")=>{
     if(mode==="delete"){ if(!window.confirm("Delete cloud backup? This cannot be undone.")) return; try{ await deleteCloudBackup(); setStatus("Cloud backup deleted"); setUi(p=>({...p,lastBackupISO:null})); }catch(e:any){ setStatus(`Delete failed: ${String(e?.message||e).slice(0,200)}`);} return; }
-    if(!window.confirm("Disable backups on this device? You will need PIN and Discord login to restore again.")) return; try{ await signOutFirebase(); }catch{} setUser({firebase:null,discord:null}); setUi({showEnableBackups:false,lastBackupISO:null,backupEnabled:false}); disableBackupsLocal(); setStatus("Backups disabled on this device");
+    if(!window.confirm("Disable backups on this device? You will need PIN and Discord login to restore again.")) return; try{ await signOutFirebase(); }catch{} setUser({firebase:null,discord:null}); setUi({showEnableBackups:false,lastBackupISO:null,backupEnabled:false}); disableBackupsLocal(); try{localStorage.removeItem(STORAGE_DISCORD_USER);}catch{} setStatus("Backups disabled on this device");
   },[]);
 
   return { user, status, isBusy, ui, setUi, onEnableBackups, onBackupAction, onDisable, setStatus, pinDialog, setPinDialog };
