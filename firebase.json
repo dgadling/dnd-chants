@@ -1,1 +1,1 @@
-{"hosting":{"ignore":["firebase.json","**/.*","**/node_modules/**"],"public":"out","rewrites":[{"destination":"/index.html","source":"**"}]}}
+{"functions":[{"codebase":"default","ignore":["node_modules",".git","firebase-debug.log","firebase-debug.*"],"source":"functions"}],"hosting":{"ignore":["firebase.json","**/.*","**/node_modules/**"],"public":"out","rewrites":[{"function":{"functionId":"dndbeyondProxy","region":"us-central1"},"source":"/api/dndbeyond/**"},{"destination":"/index.html","source":"**"}]}}
