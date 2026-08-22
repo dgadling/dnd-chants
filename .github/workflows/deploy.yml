@@ -1,8 +1,8 @@
-name: Deploy to Cloud Run
+name: Deploy to Firebase Hosting
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -17,41 +17,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - id: auth
-        uses: google-github-actions/auth@v2
+      - uses: oven-sh/setup-bun@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          bun-version: latest
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+      - run: bun install --frozen-lockfile
 
-      - name: Authorize Docker
-        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+      - run: bun run build
 
-      - name: Build image
-        run: docker build -t us-central1-docker.pkg.dev/chants-506202/dnd-chants/dnd-chants:${{ github.sha }} -t us-central1-docker.pkg.dev/chants-506202/dnd-chants/dnd-chants:latest .
-
-      - name: Push image
-        run: |
-          docker push us-central1-docker.pkg.dev/chants-506202/dnd-chants/dnd-chants:${{ github.sha }}
-          docker push us-central1-docker.pkg.dev/chants-506202/dnd-chants/dnd-chants:latest
-
-      - name: Deploy to Cloud Run
-        run: |
-          gcloud run deploy dnd-chants \
-            --project=chants-506202 \
-            --region=us-central1 \
-            --image=us-central1-docker.pkg.dev/chants-506202/dnd-chants/dnd-chants:${{ github.sha }} \
-            --platform=managed \
-            --allow-unauthenticated \
-            --min-instances=0 \
-            --max-instances=2 \
-            --memory=256Mi \
-            --cpu=0.25 \
-            --concurrency=1 \
-            --cpu-throttling \
-            --set-env-vars="NODE_ENV=production" \
-            --quiet
-          # Discord auth disabled for now – when re-enabled add:
-          # --set-env-vars="DISCORD_CLIENT_ID=...,DISCORD_REDIRECT_URI=...,SUPERUSER_DISCORD_ID=...,NODE_ENV=production"
-          # --set-secrets="DISCORD_CLIENT_SECRET=discord_client_secret:latest,DISCORD_OAUTH_FERNET_KEY=discord_oauth_fernet_key:latest,SESSION_SECRET=session_secret:latest,GOOGLE_TRANSLATE_API_KEY=google_translate_api_key:latest"
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.GCP_SA_KEY }}
+          channelId: live
+          projectId: chants-506202
