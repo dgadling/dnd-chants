@@ -53,6 +53,7 @@ const STORAGE_ACTIVE = "dnd-chant-active-character-v1";
 const STORAGE_EXTRAS = "dnd-chant-extras-v1";
 const STORAGE_SCHOOL_LANGS = "dnd-chant-school-langs-v1";
 const STORAGE_HELP_TEMPLATE = "dnd-chant-help-template-v1";
+const STORAGE_WELCOME = "dnd-chant-welcome-seen-v1";
 const DEFAULT_HELP_TEMPLATE =
   "Help me come up with a short chant or idiom for the Dungeons & Dragons spell {spell} in {language} that would sound reasonable to a native speaker.";
 const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
@@ -98,6 +99,7 @@ export default function LabPage() {
   const [drawerOpen, setDrawerOpen] = useState<boolean>(true);
   const [showHelpConfig, setShowHelpConfig] = useState<boolean>(false);
   const [showPrivacy, setShowPrivacy] = useState<boolean>(false);
+  const [showWelcome, setShowWelcome] = useState<boolean>(false);
   const [helpTemplate, setHelpTemplate] = useState<string>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_HELP_TEMPLATE);
@@ -293,6 +295,20 @@ export default function LabPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const closeWelcome = useCallback(() => {
+    try { localStorage.setItem(STORAGE_WELCOME, "1"); } catch {}
+    setShowWelcome(false);
+  }, []);
+
+  // welcome once
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(STORAGE_WELCOME) !== "1") {
+        setShowWelcome(true);
+      }
+    } catch {}
+  }, []);
+
   // persistence
   useEffect(() => {
     try {
@@ -337,6 +353,10 @@ export default function LabPage() {
           backup.setUi(p => ({ ...p, showEnableBackups: false }));
           return;
         }
+        if (showWelcome) {
+          closeWelcome();
+          return;
+        }
         if (showPrivacy) {
           setShowPrivacy(false);
           return;
@@ -363,7 +383,7 @@ export default function LabPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [showPrivacy, showHelpConfig, pendingDeleteId, showAddCharacter, drawerOpen]);
+  }, [showPrivacy, showHelpConfig, pendingDeleteId, showAddCharacter, drawerOpen, showWelcome, closeWelcome, backup.ui.showEnableBackups]);
 
   const fetchCharacterInternal = async (idOrUrl: string, opts: { silent?: boolean } = {}, existingChars?: StoredCharacter[]) => {
     const id = extractIdClient(idOrUrl);
@@ -817,19 +837,63 @@ export default function LabPage() {
           </div>
 
           {totalVerbal === 0 ? (
-            <div className="px-6 py-12 text-center space-y-3 rounded-xl border border-zinc-700 bg-zinc-800">
-              <div className="text-lg font-semibold">No spells yet</div>
-              <div className="text-sm text-zinc-400 max-w-[420px] mx-auto">
-                Link your D&amp;D Beyond character from the left drawer to see your spells here. The app fetches live via the proxy at <span className="text-zinc-300">/api/dndbeyond/{`{id}`}</span>.
+            !hasChars ? (
+              <div className="rounded-xl border border-zinc-700 bg-zinc-800 p-6 md:p-8">
+                <h2 className="text-[18px] font-semibold tracking-tight mb-1">Get started</h2>
+                <p className="text-[13px] text-zinc-400 mb-6 max-w-[520px]">Link a character, pick a spell, write a cue. Everything saves locally.</p>
+                <div className="grid gap-4 md:grid-cols-3 mb-6">
+                  <div className="rounded-lg bg-zinc-900/70 border border-zinc-700/60 p-4 flex gap-3">
+                    <div className="h-7 w-7 rounded-full bg-amber-400 text-black grid place-items-center text-[12px] font-bold shrink-0">1</div>
+                    <div className="min-w-0">
+                      <div className="text-[13px] font-semibold text-zinc-100">Link your D&D Beyond character</div>
+                      <div className="text-[12px] text-zinc-400 mt-1 leading-snug">Paste your character ID or URL from D&D Beyond. We fetch via <code className="text-[11px] bg-zinc-800 px-1 py-0.5 rounded">/api/dndbeyond</code> proxy, no copy stored.</div>
+                    </div>
+                  </div>
+                  <div className="rounded-lg bg-zinc-900/70 border border-zinc-700/60 p-4 flex gap-3">
+                    <div className="h-7 w-7 rounded-full bg-amber-400 text-black grid place-items-center text-[12px] font-bold shrink-0">2</div>
+                    <div className="min-w-0">
+                      <div className="text-[13px] font-semibold text-zinc-100">Pick a spell and write your cue</div>
+                      <div className="text-[12px] text-zinc-400 mt-1 leading-snug">Choose a school, type an English cue, translate and play audio.</div>
+                    </div>
+                  </div>
+                  <div className="rounded-lg bg-zinc-900/70 border border-zinc-700/60 p-4 flex gap-3">
+                    <div className="h-7 w-7 rounded-full bg-amber-400 text-black grid place-items-center text-[12px] font-bold shrink-0">3</div>
+                    <div className="min-w-0">
+                      <div className="text-[13px] font-semibold text-zinc-100">Save and back up</div>
+                      <div className="text-[12px] text-zinc-400 mt-1 leading-snug">Everything saves locally. Enable cloud backup with Discord + 6-digit PIN when ready.</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => { setDrawerOpen(true); setShowAddCharacter(true); }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-amber-400 text-black text-[13px] font-semibold hover:bg-amber-300"
+                  >
+                    + Add Character
+                  </button>
+                  <button
+                    onClick={() => setDrawerOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-zinc-700 text-zinc-200 text-[13px] font-medium hover:bg-zinc-600 lg:hidden"
+                  >
+                    Open menu
+                  </button>
+                </div>
               </div>
-              <div className="text-xs text-zinc-500 pt-2">Once linked, schools show count only and dim when empty. Everything is saved locally.</div>
-              <button
-                onClick={() => { setDrawerOpen(true); setShowAddCharacter(true); }}
-                className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-amber-400 text-black text-[13px] font-semibold hover:bg-amber-300 lg:hidden"
-              >
-                + Add Character
-              </button>
-            </div>
+            ) : (
+              <div className="px-6 py-12 text-center space-y-3 rounded-xl border border-zinc-700 bg-zinc-800">
+                <div className="text-lg font-semibold">No spells yet</div>
+                <div className="text-sm text-zinc-400 max-w-[420px] mx-auto">
+                  Link your D&amp;D Beyond character from the left drawer to see your spells here. The app fetches live via the proxy at <span className="text-zinc-300">/api/dndbeyond/{`{id}`}</span>.
+                </div>
+                <div className="text-xs text-zinc-500 pt-2">Once linked, schools show count only and dim when empty. Everything is saved locally.</div>
+                <button
+                  onClick={() => { setDrawerOpen(true); setShowAddCharacter(true); }}
+                  className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-amber-400 text-black text-[13px] font-semibold hover:bg-amber-300 lg:hidden"
+                >
+                  + Add Character
+                </button>
+              </div>
+            )
           ) : (
             <section className="mb-5 md:mb-8 rounded-[14px] md:rounded-xl bg-zinc-800 border border-zinc-700 overflow-hidden">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3 px-3 py-3 md:px-4 border-b border-zinc-700 bg-zinc-800">
@@ -942,9 +1006,9 @@ export default function LabPage() {
 
       {/* Add Character modal */}
       {showAddCharacter ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 max-w-sm w-full shadow-2xl">
-            <h3 className="text-sm font-semibold text-zinc-100 mb-3">Add Character</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => { setShowAddCharacter(false); setLinkInput(""); setLinkStatus(""); }} role="dialog" aria-modal="true" aria-labelledby="add-char-title">
+          <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 max-w-sm w-full shadow-2xl" onClick={e=>e.stopPropagation()}>
+            <h3 id="add-char-title" className="text-sm font-semibold text-zinc-100 mb-3">Add Character</h3>
             <div className="text-[11px] font-semibold text-zinc-300 uppercase tracking-wide mb-2">D&D Beyond URL or ID</div>
             <input
               className="w-full h-10 rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 px-3 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
@@ -955,14 +1019,14 @@ export default function LabPage() {
               autoFocus
             />
             <div className="flex gap-2 mt-3">
-              <button onClick={onLinkClick} disabled={isLinking} className="flex-1 bg-amber-400 text-black rounded-lg text-sm h-10 font-semibold hover:bg-amber-300 disabled:opacity-60">
+              <button onClick={onLinkClick} disabled={isLinking} className="flex-1 bg-amber-400 text-black rounded-lg text-sm h-10 font-semibold hover:bg-amber-300 disabled:opacity-60" aria-label="Link D&D Beyond character">
                 {isLinking ? "Linking…" : characters.length ? "Add Character" : "Link Character"}
               </button>
-              <button onClick={() => { setShowAddCharacter(false); setLinkInput(""); setLinkStatus(""); }} className="bg-zinc-700 text-zinc-200 rounded-lg text-sm h-10 px-4 hover:bg-zinc-600">
+              <button onClick={() => { setShowAddCharacter(false); setLinkInput(""); setLinkStatus(""); }} className="bg-zinc-700 text-zinc-200 rounded-lg text-sm h-10 px-4 hover:bg-zinc-600" aria-label="Cancel add character">
                 Cancel
               </button>
             </div>
-            {linkStatus ? <div className="text-xs text-amber-200 mt-2">{linkStatus}</div> : null}
+            {linkStatus ? <div className="text-xs text-amber-200 mt-2" role="status">{linkStatus}</div> : null}
           </div>
         </div>
       ) : null}
@@ -1071,6 +1135,32 @@ export default function LabPage() {
             <p className="text-[12px] text-zinc-400 mb-3">6-digit PIN, same PIN you used to enable backups.</p>
             <input id="pin-dialog-input" type="password" inputMode="numeric" maxLength={6} placeholder="123456" className="w-full h-10 rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 px-3 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-400" onKeyDown={e=>{ if(e.key==="Enter"){ const el=document.getElementById("pin-dialog-input") as HTMLInputElement; const v=el?.value||""; if(/^\d{6}$/.test(v)) backup.pinDialog.resolve?.(v); } if(e.key==="Escape") backup.pinDialog.resolve?.(null); }} />
             <div className="flex justify-between gap-2 mt-4"><button onClick={()=>backup.pinDialog.resolve?.(null)} className="bg-zinc-700 text-zinc-200 rounded-lg text-xs h-8 px-4 hover:bg-zinc-600">Cancel</button><button onClick={()=>{ const el=document.getElementById("pin-dialog-input") as HTMLInputElement; const v=el?.value||""; if(/^\d{6}$/.test(v)) backup.pinDialog.resolve?.(v); }} className="bg-amber-400 text-black rounded-lg text-xs h-8 px-4 hover:bg-amber-300 font-semibold">Confirm</button></div>
+          </div>
+        </div>
+      ) : null}
+
+      {showWelcome ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={closeWelcome} role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+          <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6 max-w-md w-full shadow-2xl" onClick={e=>e.stopPropagation()}>
+            <div className="h-8 w-8 rounded-lg bg-amber-400 text-black grid place-items-center font-bold text-[14px] mb-3">🐉</div>
+            <h3 id="welcome-title" className="text-[16px] font-semibold text-zinc-100 mb-2">Your chants live here</h3>
+            <p className="text-[13px] leading-relaxed text-zinc-300 mb-5">Everything lives in this browser. No account needed. Cloud backup is optional and encrypted with a PIN only you know.</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={()=>{ closeWelcome(); setDrawerOpen(true); setShowAddCharacter(true); }}
+                className="flex-1 bg-amber-400 text-black rounded-lg text-[13px] h-10 px-4 font-semibold hover:bg-amber-300"
+                aria-label="Add my D&D Beyond character"
+              >
+                Add my character
+              </button>
+              <button
+                onClick={closeWelcome}
+                className="flex-1 sm:flex-none bg-zinc-700 text-zinc-200 rounded-lg text-[13px] h-10 px-4 hover:bg-zinc-600"
+                aria-label="Dismiss welcome and continue"
+              >
+                Got it
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
