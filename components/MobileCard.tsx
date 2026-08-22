@@ -79,6 +79,13 @@ export function MobileCard(props: Props) {
     void playCachedAudio(toSpeak, targetLang);
   }, [effectiveNative, targetLang]);
 
+  const handleIdiom = useCallback(() => {
+    const englishTry = input.trim() || spell.name;
+    const langName = getLangName(targetLang);
+    const q = `idiom in ${langName} for "${englishTry}"`;
+    window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, "_blank", "popup,width=900,height=700");
+  }, [input, spell.name, targetLang]);
+
   const handleSave = useCallback(() => {
     if (!effectiveNative || !input.trim()) return;
     setSaveFailed(false);
@@ -167,7 +174,18 @@ export function MobileCard(props: Props) {
         />
       </label>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
+        <button
+          aria-label={`Idiom search for ${spell.name} mobile`}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-100 text-[14px] font-medium disabled:opacity-60 active:bg-zinc-700"
+          disabled={!input.trim()}
+          onClick={handleIdiom}
+          type="button"
+          title={`Search idiom in ${langName}`}
+        >
+          <span>💬</span>
+          <span className="hidden sm:inline">Idiom</span>
+        </button>
         <button
           aria-label={`Play audio for ${spell.name} mobile`}
           className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-100 text-[14px] font-medium disabled:opacity-60 active:bg-zinc-700"

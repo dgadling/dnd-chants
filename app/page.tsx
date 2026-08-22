@@ -372,7 +372,7 @@ export default function LabPage() {
                     <th className="py-2 px-2 font-medium">Try phrasing</th>
                     <th className="py-2 px-1 font-medium">Go</th>
                     <th className="py-2 px-2 font-medium">Result</th>
-                    <th className="py-2 px-1 font-medium w-[96px] min-w-[96px] max-w-[96px] whitespace-nowrap">Save / Audio</th>
+                    <th className="py-2 px-1 font-medium w-[128px] min-w-[128px] max-w-[128px] whitespace-nowrap">Save / Audio</th>
                   </tr>
                 </thead>
                 <tbody>
