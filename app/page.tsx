@@ -1044,12 +1044,12 @@ export default function LabPage() {
               </button>
             </div>
             <div className="space-y-3 text-[13px] leading-relaxed text-zinc-300">
-              <p>Everything you type and your characters are stored locally in your browser (localStorage and IndexedDB). We do not have accounts or servers storing your personal stuff.</p>
-              <p>When you load a character, we fetch it from D&amp;D Beyond via our proxy (api/dndbeyond). We do not keep a copy on our servers, we just pass it through.</p>
-              <p>When you translate or play audio, we send the spell text and language to Google Translate via our proxy (api/tts and translate). No personal info, just the chant text.</p>
+              <p>Everything you type and your characters are stored locally in your browser. We do not have accounts or servers storing your personal stuff, unless you enable cloud backups.</p>
+              <p>When you load a character, we fetch it from D&amp;D Beyond via our proxy (api/dndbeyond). We do not keep a copy on our servers, we just pass it through. We only do this because dndbeyond.com does not allow you to fetch directly.</p>
+              <p>When you translate text, you send it directly to Google for translation. We never see it. When you play audio, we send the spell text and language to Google Translate via our proxy (api/tts). Similar to dndbeyond.com, this is a technical limitation with Google. No personal info, just the chant text.</p>
               <p>When you click Help for idioms, we open a Google AI search with your prompt. That is Google&apos;s site, not ours.</p>
-              <p>No cookies, no tracking, no analytics. If you clear your browser data, your chants go away too.</p>
-              <p>Cloud Backup is optional. If you enable it, we store an encrypted blob in Firestore keyed by your Discord id. We cannot read it without your 6-digit PIN. The PIN is 1,000,000 possibilities and can be brute forced if someone gets the database. So we cannot see what we are storing. It is not perfect, but it is private. Your PIN is stored locally per device as a derived key, not the PIN itself. You can delete the cloud backup anytime. Discord login is only for identity so only you can fetch your blob.</p>
+              <p>No cookies, no tracking, no analytics.</p>
+              <p>Cloud Backup is optional. If you enable it, we store an encrypted blob in Firestore. Nobody can read it without your 6-digit PIN or a LOT of effort. So we cannot see what we are storing. It is not perfect, but it is private. Your PIN is only ever stored locally on your devices as a derived key, not the PIN itself. You can delete the cloud backup anytime. Discord login is only for identity so only you can fetch your blob.</p>
             </div>
             <div className="flex justify-end mt-5">
               <button
