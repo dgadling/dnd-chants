@@ -8,6 +8,7 @@ import { MobileCard } from "@/components/MobileCard";
 import { fetchCharacterClient, extractId as extractIdClient } from "@/lib/dndbeyond-client";
 import { EnableBackupsDialog } from "@/components/EnableBackupsDialog";
 import { useBackup } from "@/lib/useBackup";
+import { formatBytes as formatBackupBytes, formatLocalTimestamp } from "@/lib/backup";
 
 type Spell = {
   name: string;
@@ -717,7 +718,7 @@ export default function LabPage() {
                     </button>
                   </div>
 
-                  {backup.ui.lastBackupISO ? <div className="text-[10px] text-zinc-500 px-1">Last backup {formatRelative(backup.ui.lastBackupISO)}</div> : null}
+                  {backup.ui.lastBackupISO ? <div className="text-[10px] text-zinc-500 px-1">Backed up {backup.ui.lastBackupSize ? `${formatBackupBytes(backup.ui.lastBackupSize)} at ` : ""}{formatLocalTimestamp(new Date(backup.ui.lastBackupISO))}</div> : null}
                   {backup.status ? <div className="text-[10px] text-amber-200/80 px-1 break-words">{backup.status}</div> : null}
                 </div>
               )}

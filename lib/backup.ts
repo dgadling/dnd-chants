@@ -5,6 +5,24 @@ import { STORAGE_BACKUP_KEY, deriveKeyFromPin, exportKeyToBase64, importKeyFromB
 
 export const STORAGE_BACKUP_ENABLED = "dnd-chant-backup-enabled";
 export const STORAGE_LAST_BACKUP = "dnd-chant-last-backup";
+export const STORAGE_LAST_BACKUP_SIZE = "dnd-chant-last-backup-size";
+
+export function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(n >= 10240 ? 0 : 1)} kB`;
+  return `${(n / (1024 * 1024)).toFixed(n >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
+}
+
+export function formatLocalTimestamp(d = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  let h = d.getHours();
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12; if (h === 0) h = 12;
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${y}-${m}-${day} ${h}:${min} ${ampm}`;
+}
 
 export function isAllowedOrigin(origin: string): boolean {
   if (!origin) return false;
@@ -18,11 +36,15 @@ export async function backupToCloud(payload: any, uid: string, pin?: string) {
   if (!key) { if (!pin) throw new Error("PIN required – enter 6-digit PIN to encrypt backup"); key = await deriveKeyFromPin(pin, uid); localStorage.setItem(STORAGE_BACKUP_KEY, await exportKeyToBase64(key)); }
   const gz = pako.deflate(JSON.stringify(payload));
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv as unknown as BufferSource }, key, gz as unknown as BufferSource);
+  const ctBuf = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv as unknown as BufferSource }, key, gz as unknown as BufferSource);
+  const ct = ctBuf as ArrayBuffer;
   const resp = await fetch("/api/backup", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` }, body: JSON.stringify({ iv: toBase64(iv), ciphertext: toBase64(ct), updatedAt: Date.now() }) });
   let j: any; try { j = await resp.json(); } catch { throw new Error("Backup failed: server did not return JSON – check /api/backup rewrite and Hosting deploy"); }
   if (!resp.ok || !j?.ok) throw new Error(`Backup failed ${resp.status}: ${JSON.stringify(j).slice(0,200)}`);
-  localStorage.setItem(STORAGE_LAST_BACKUP, new Date().toISOString()); return { iv: toBase64(iv), ciphertext: toBase64(ct), updatedAt: j.updatedAt };
+  const now = new Date();
+  localStorage.setItem(STORAGE_LAST_BACKUP, now.toISOString());
+  try { localStorage.setItem(STORAGE_LAST_BACKUP_SIZE, String(ct.byteLength)); } catch {}
+  return { iv: toBase64(iv), ciphertext: toBase64(ct), updatedAt: j.updatedAt, size: ct.byteLength, at: now.toISOString() };
 }
 
 export async function restoreFromCloud(uid: string, pin?: string) {
@@ -46,9 +68,11 @@ export async function deleteCloudBackup() {
   let j: any; try { j = await resp.json(); } catch { throw new Error("Delete failed: server did not return JSON"); }
   if (!resp.ok || !j?.ok) throw new Error(`Delete failed ${resp.status}: ${JSON.stringify(j).slice(0,200)}`);
   localStorage.removeItem(STORAGE_LAST_BACKUP);
+  try { localStorage.removeItem(STORAGE_LAST_BACKUP_SIZE); } catch {}
 }
 
 export function disableBackupsLocal() {
   localStorage.removeItem(STORAGE_BACKUP_KEY); localStorage.removeItem(STORAGE_BACKUP_ENABLED); localStorage.removeItem(STORAGE_LAST_BACKUP);
+  try { localStorage.removeItem(STORAGE_LAST_BACKUP_SIZE); } catch {}
   try { sessionStorage.removeItem("dnd-chant-pending-pin"); sessionStorage.removeItem("dnd-chant-discord-state"); } catch {}
 }
