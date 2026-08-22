@@ -30,7 +30,57 @@ export function useBackup(opts: { characters:any[]; schoolLangsPerChar:Record<st
       if(d.type==="discord-auth-success"&&d.customToken){
         const exp=sessionStorage.getItem("dnd-chant-discord-state"); if(!exp||!d.state||d.state!==exp){ setStatus("Discord state mismatch – try again"); return; }
         try{ setIsBusy(true); setStatus("Signing in with Discord…"); const fb=await signInWithDiscordCustomToken(d.customToken); const du=d.discordUser?{id:d.discordUser.id,username:d.discordUser.username,avatar:d.discordUser.avatar}:null; setUser({firebase:fb,discord:du}); if(du){ try{localStorage.setItem(STORAGE_DISCORD_USER,JSON.stringify(du));}catch{} } setUi(p=>({...p,backupEnabled:true})); try{localStorage.setItem(STORAGE_BACKUP_ENABLED,"1");}catch{}
-          const pending=sessionStorage.getItem("dnd-chant-pending-pin"); if(pending&&/^\d{6}$/.test(pending)){ const uid=(fb as any)?.uid||`discord:${d.discordUser?.id||""}`; const key=await deriveKeyFromPin(pending,uid); localStorage.setItem(STORAGE_BACKUP_KEY,await exportKeyToBase64(key)); setStatus("Backing up…"); try{ const res=await backupToCloud({characters:opts.characters,schoolLangsPerChar:opts.schoolLangsPerChar,extrasPerChar:opts.extrasPerChar,activeId:opts.activeId,helpTemplate:opts.helpTemplate,ddbLink:(()=>{try{return localStorage.getItem("dnd-chant-ddb-link-v1");}catch{return null;}})()},uid,pending); const now=new Date(res.at || new Date().toISOString()); const msg=`Backed up ${res.size?`${formatBytes(res.size)} at `:""}${formatLocalTimestamp(now)}`; setUi(p=>({...p,lastBackupISO:now.toISOString(),lastBackupSize:res.size||null,lastCloudAction:msg,showEnableBackups:false})); try{localStorage.setItem(STORAGE_LAST_BACKUP,now.toISOString()); if(res.size) localStorage.setItem(STORAGE_LAST_BACKUP_SIZE,String(res.size)); localStorage.setItem(STORAGE_LAST_CLOUD_ACTION,msg);}catch{} setStatus(""); sessionStorage.removeItem("dnd-chant-pending-pin"); sessionStorage.removeItem("dnd-chant-discord-state"); }catch(err:any){ setStatus(`Backup failed: ${String(err?.message||err).slice(0,200)}`);} } else { setStatus("Discord login complete – set PIN to backup"); setUi(p=>({...p,showEnableBackups:true})); } }catch(err:any){ setStatus(`Discord sign-in failed: ${String(err?.message||err).slice(0,200)}`);} finally{ setIsBusy(false);} } else if(d.type==="discord-auth-error"){ setStatus(`Discord auth failed: ${d.error||"unknown"}`); setIsBusy(false); }
+          const pending=sessionStorage.getItem("dnd-chant-pending-pin"); if(pending&&/^\d{6}$/.test(pending)){ const uid=(fb as any)?.uid||`discord:${d.discordUser?.id||""}`; const key=await deriveKeyFromPin(pending,uid); localStorage.setItem(STORAGE_BACKUP_KEY,await exportKeyToBase64(key));
+            // Step 3: second device – check if cloud backup exists before overwriting
+            try{
+              const idTok=await getIdToken();
+              if(idTok){
+                const chk=await fetch("/api/backup",{method:"GET",headers:{Authorization:`Bearer ${idTok}`}});
+                if(chk.status===200){
+                  const doRestore=window.confirm("Found existing cloud backup. Restore it to this device?");
+                  if(doRestore){
+                    setStatus("Restoring existing backup…");
+                    try{
+                      const data=await restoreFromCloud(uid,pending);
+                      if(Array.isArray(data.characters)) localStorage.setItem("dnd-chant-characters-v1",JSON.stringify(data.characters));
+                      if(data.schoolLangsPerChar) localStorage.setItem("dnd-chant-school-langs-v1",JSON.stringify(data.schoolLangsPerChar));
+                      if(data.extrasPerChar) localStorage.setItem("dnd-chant-extras-v1",JSON.stringify(data.extrasPerChar));
+                      if(typeof data.activeId==="string") localStorage.setItem("dnd-chant-active-character-v1",data.activeId);
+                      if(typeof data.helpTemplate==="string") localStorage.setItem("dnd-chant-help-template-v1",data.helpTemplate);
+                      if(data.ddbLink) try{localStorage.setItem("dnd-chant-ddb-link-v1",data.ddbLink);}catch{}
+                      const size=(()=>{ try{ return new Blob([JSON.stringify(data)]).size; }catch{ return 0; } })();
+                      const now=new Date();
+                      const msg=`Restored ${size?`${formatBytes(size)} at `:""}${formatLocalTimestamp(now)}`;
+                      setUi(p=>({...p,lastCloudAction:msg,showEnableBackups:false}));
+                      try{ localStorage.setItem(STORAGE_LAST_CLOUD_ACTION,msg); }catch{}
+                      setStatus("Restore complete – reloading");
+                      try{ sessionStorage.removeItem("dnd-chant-pending-pin"); sessionStorage.removeItem("dnd-chant-discord-state"); }catch{}
+                      setTimeout(()=>window.location.reload(),500);
+                      return;
+                    }catch(re:any){
+                      const rm=String(re?.message||re);
+                      if(rm.toLowerCase().includes("wrong pin")||rm.toLowerCase().includes("decrypt")){
+                        setStatus(rm.slice(0,200));
+                      }else{
+                        setStatus(`Restore failed: ${rm.slice(0,200)}`);
+                      }
+                      try{ sessionStorage.removeItem("dnd-chant-pending-pin"); sessionStorage.removeItem("dnd-chant-discord-state"); }catch{}
+                      setUi(p=>({...p,showEnableBackups:false}));
+                      setIsBusy(false);
+                      return;
+                    }
+                  }else{
+                    // No -> DO NOTHING, just close dialog
+                    setStatus("");
+                    setUi(p=>({...p,showEnableBackups:false}));
+                    try{ sessionStorage.removeItem("dnd-chant-pending-pin"); sessionStorage.removeItem("dnd-chant-discord-state"); }catch{}
+                    setIsBusy(false);
+                    return;
+                  }
+                }
+              }
+            }catch{}
+            setStatus("Backing up…"); try{ const res=await backupToCloud({characters:opts.characters,schoolLangsPerChar:opts.schoolLangsPerChar,extrasPerChar:opts.extrasPerChar,activeId:opts.activeId,helpTemplate:opts.helpTemplate,ddbLink:(()=>{try{return localStorage.getItem("dnd-chant-ddb-link-v1");}catch{return null;}})()},uid,pending); const now=new Date(res.at || new Date().toISOString()); const msg=`Backed up ${res.size?`${formatBytes(res.size)} at `:""}${formatLocalTimestamp(now)}`; setUi(p=>({...p,lastBackupISO:now.toISOString(),lastBackupSize:res.size||null,lastCloudAction:msg,showEnableBackups:false})); try{localStorage.setItem(STORAGE_LAST_BACKUP,now.toISOString()); if(res.size) localStorage.setItem(STORAGE_LAST_BACKUP_SIZE,String(res.size)); localStorage.setItem(STORAGE_LAST_CLOUD_ACTION,msg);}catch{} setStatus(""); sessionStorage.removeItem("dnd-chant-pending-pin"); sessionStorage.removeItem("dnd-chant-discord-state"); }catch(err:any){ setStatus(`Backup failed: ${String(err?.message||err).slice(0,200)}`);} } else { setStatus("Discord login complete – set PIN to backup"); setUi(p=>({...p,showEnableBackups:true})); } }catch(err:any){ setStatus(`Discord sign-in failed: ${String(err?.message||err).slice(0,200)}`);} finally{ setIsBusy(false);} } else if(d.type==="discord-auth-error"){ setStatus(`Discord auth failed: ${d.error||"unknown"}`); setIsBusy(false); }
     };
     window.addEventListener("message",onMessage); return()=>window.removeEventListener("message",onMessage);
   },[opts.characters,opts.schoolLangsPerChar,opts.extrasPerChar,opts.activeId,opts.helpTemplate]);
