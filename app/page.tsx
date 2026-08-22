@@ -9,6 +9,7 @@ import { fetchCharacterClient, extractId as extractIdClient } from "@/lib/dndbey
 import { EnableBackupsDialog } from "@/components/EnableBackupsDialog";
 import { useBackup } from "@/lib/useBackup";
 import { formatBytes as formatBackupBytes, formatLocalTimestamp } from "@/lib/backup";
+import { useTheme } from "@/lib/useTheme";
 
 type Spell = {
   name: string;
@@ -89,6 +90,8 @@ function extractIdForDisplay(input: string): string | null {
 }
 
 export default function LabPage() {
+  const theme = useTheme();
+  const isLight = theme.actual === "light";
   const [characters, setCharacters] = useState<StoredCharacter[]>([]);
   const [activeId, setActiveId] = useState<string>("");
   const [linkInput, setLinkInput] = useState<string>("");
@@ -541,7 +544,7 @@ export default function LabPage() {
   }, [activeId]);
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-zinc-100 antialiased flex">
+    <div className={`min-h-screen antialiased flex ${isLight ? "bg-white text-zinc-900" : "bg-zinc-900 text-zinc-100"}`}>
       {/* Backdrop mobile */}
       {drawerOpen ? (
         <div
@@ -552,18 +555,18 @@ export default function LabPage() {
 
       {/* Left Drawer - 240px persistent desktop, overlay mobile */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-[300px] max-w-[85vw] bg-zinc-800 border-r border-zinc-700 flex flex-col transform transition-transform duration-200 lg:translate-x-0 lg:static lg:w-[240px] lg:max-w-none lg:shrink-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-[300px] max-w-[85vw] border-r flex flex-col transform transition-transform duration-200 lg:translate-x-0 lg:static lg:w-[240px] lg:max-w-none lg:shrink-0 ${
           drawerOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        } ${isLight ? "bg-white border-zinc-200 text-zinc-900" : "bg-zinc-800 border-zinc-700 text-zinc-100"}`}
       >
-        <div className="flex items-center justify-between px-4 py-3.5 border-b border-zinc-700 shrink-0">
+        <div className={`flex items-center justify-between px-4 py-3.5 border-b shrink-0 ${isLight ? "border-zinc-200" : "border-zinc-700"}`}>
           <div className="flex items-center gap-2 min-w-0">
-            <div className="h-7 w-7 rounded-lg bg-amber-400 text-black grid place-items-center font-bold text-[13px]">D</div>
+            <div className={`h-7 w-7 rounded-lg grid place-items-center font-bold text-[13px] ${isLight ? "bg-sky-500 text-white" : "bg-amber-400 text-black"}`}>D</div>
             <span className="font-semibold tracking-tight text-[15px]">D&D Chants</span>
           </div>
           <button
             onClick={() => setDrawerOpen(false)}
-            className="lg:hidden h-8 w-8 grid place-items-center rounded-lg bg-zinc-700 hover:bg-zinc-600 text-zinc-300"
+            className={`lg:hidden h-8 w-8 grid place-items-center rounded-lg ${isLight ? "bg-zinc-100 hover:bg-zinc-200 text-zinc-600" : "bg-zinc-700 hover:bg-zinc-600 text-zinc-300"}`}
             aria-label="Close menu"
           >
             ✕
@@ -574,15 +577,15 @@ export default function LabPage() {
           {/* Characters Section */}
           <div>
             <div className="flex items-center justify-between mb-2 px-1">
-              <h2 className="text-[11px] uppercase tracking-widest font-semibold text-zinc-400">Characters</h2>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-500 ${hasChars ? "" : "hidden"}`}>
+              <h2 className={`text-[11px] uppercase tracking-widest font-semibold ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>Characters</h2>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${isLight ? "bg-zinc-50 border-zinc-200 text-zinc-500" : "bg-zinc-900 border-zinc-700 text-zinc-500"} ${hasChars ? "" : "hidden"}`}>
                 {characters.length}
               </span>
             </div>
 
             <div className="flex flex-col gap-1.5">
               {!hasChars ? (
-                <div className="text-[12px] text-zinc-500 px-2 py-3 rounded-lg bg-zinc-900/60 border border-dashed border-zinc-700/60">
+                <div className={`text-[12px] px-2 py-3 rounded-lg border border-dashed ${isLight ? "text-zinc-500 bg-zinc-50 border-zinc-300/70" : "text-zinc-500 bg-zinc-900/60 border-zinc-700/60"}`}>
                   No characters yet. Add your first D&D Beyond character to begin.
                 </div>
               ) : (
@@ -595,7 +598,7 @@ export default function LabPage() {
                     <div
                       key={c.characterId}
                       className={`group flex flex-col rounded-xl border transition-colors ${
-                        isActive ? "bg-zinc-900 border-amber-400/40 text-zinc-100 p-2.5" : "bg-zinc-900/40 border-zinc-700/60 text-zinc-300 hover:bg-zinc-700/50 hover:border-zinc-600 px-2.5 py-2"
+                        isActive ? (isLight ? "bg-sky-50 border-sky-500/30 text-zinc-900 p-2.5" : "bg-zinc-900 border-amber-400/40 text-zinc-100 p-2.5") : (isLight ? "bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300 px-2.5 py-2" : "bg-zinc-900/40 border-zinc-700/60 text-zinc-300 hover:bg-zinc-700/50 hover:border-zinc-600 px-2.5 py-2")
                       }`}
                     >
                       <div className="flex items-center gap-1.5">
@@ -603,19 +606,19 @@ export default function LabPage() {
                           className="flex-1 min-w-0 text-left flex items-center gap-1.5"
                           onClick={() => onSwitchCharacter(c.characterId)}
                         >
-                          <div className={`h-2 w-2 rounded-full shrink-0 ${isActive ? "bg-amber-400" : "bg-zinc-600 group-hover:bg-zinc-500"}`} />
+                          <div className={`h-2 w-2 rounded-full shrink-0 ${isActive ? (isLight ? "bg-sky-500" : "bg-amber-400") : (isLight ? "bg-zinc-300 group-hover:bg-zinc-400" : "bg-zinc-600 group-hover:bg-zinc-500")}`} />
                           <div className="flex-1 min-w-0">
                             <div className="text-[13px] font-medium truncate">{c.characterName || `Char ${c.characterId}`}</div>
                           </div>
                         </button>
 
-                        <span className="text-[10px] text-zinc-500 hidden sm:inline">·{c.spells.length}</span>
+                        <span className={`text-[10px] hidden sm:inline ${isLight ? "text-zinc-400" : "text-zinc-500"}`}>·{c.spells.length}</span>
 
                         <a
                           href={`https://www.dndbeyond.com/characters/${c.characterId}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="h-6 w-6 grid place-items-center rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 shrink-0"
+                          className={`h-6 w-6 grid place-items-center rounded-md shrink-0 ${isLight ? "bg-zinc-100 hover:bg-zinc-200 text-zinc-500 hover:text-zinc-700" : "bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200"}`}
                           title="Open in D&D Beyond"
                           onClick={(e) => e.stopPropagation()}
                         >
@@ -627,7 +630,7 @@ export default function LabPage() {
                         </a>
 
                         <button
-                          className="h-6 w-6 grid place-items-center rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-red-300 text-[13px] shrink-0"
+                          className={`h-6 w-6 grid place-items-center rounded-md text-[13px] shrink-0 ${isLight ? "bg-zinc-100 hover:bg-zinc-200 text-zinc-500 hover:text-red-500" : "bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-red-300"}`}
                           onClick={(e) => { e.stopPropagation(); onRemoveCharacter(c.characterId); }}
                           aria-label={`Delete ${c.characterName || c.characterId}`}
                           title={`Delete ${c.characterName || c.characterId}`}
@@ -637,13 +640,13 @@ export default function LabPage() {
                       </div>
 
                       {isExpanded ? (
-                        <div className="mt-2 pt-2 border-t border-zinc-700/60 space-y-1">
-                          <div className="text-[11px] text-zinc-500">Last fetch {fetchText}</div>
-                          {modText ? <div className="text-[11px] text-zinc-500">Sheet modified {modText}</div> : null}
+                        <div className={`mt-2 pt-2 border-t space-y-1 ${isLight ? "border-zinc-200" : "border-zinc-700/60"}`}>
+                          <div className={`text-[11px] ${isLight ? "text-zinc-500" : "text-zinc-500"}`}>Last fetch {fetchText}</div>
+                          {modText ? <div className={`text-[11px] ${isLight ? "text-zinc-500" : "text-zinc-500"}`}>Sheet modified {modText}</div> : null}
                           <button
                             onClick={onRefreshClick}
                             disabled={isLinking}
-                            className="w-full mt-2 inline-flex items-center justify-center gap-1.5 bg-zinc-700 border border-zinc-600 text-zinc-100 rounded-lg text-[12px] h-8 px-3 hover:bg-zinc-600 disabled:opacity-60"
+                            className={`w-full mt-2 inline-flex items-center justify-center gap-1.5 border rounded-lg text-[12px] h-8 px-3 disabled:opacity-60 ${isLight ? "bg-white border-zinc-300 text-zinc-700 hover:bg-zinc-50" : "bg-zinc-700 border-zinc-600 text-zinc-100 hover:bg-zinc-600"}`}
                           >
                             <span>↻</span>
                             <span>{isLinking ? "Refreshing…" : "Refresh"}</span>
@@ -658,37 +661,56 @@ export default function LabPage() {
 
             <button
               onClick={() => setShowAddCharacter(true)}
-              className="mt-3 w-full text-[13px] px-3 py-2.5 rounded-lg border border-dashed border-zinc-600 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 hover:bg-zinc-700/50 transition-colors font-medium flex items-center justify-center gap-1.5"
+              className={`mt-3 w-full text-[13px] px-3 py-2.5 rounded-lg border border-dashed transition-colors font-medium flex items-center justify-center gap-1.5 ${isLight ? "border-zinc-300 text-zinc-500 hover:text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50" : "border-zinc-600 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 hover:bg-zinc-700/50"}`}
             >
               <span className="text-[14px]">+</span> Add Character
             </button>
 
             <button
               onClick={() => setShowHelpConfig(true)}
-              className="mt-2 w-full text-[12px] px-3 py-2 rounded-lg border border-zinc-700 bg-zinc-900/40 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50 hover:border-zinc-600 transition-colors font-medium flex items-center justify-center gap-1.5"
+              className={`mt-2 w-full text-[12px] px-3 py-2 rounded-lg border transition-colors font-medium flex items-center justify-center gap-1.5 ${isLight ? "border-zinc-200 bg-white text-zinc-600 hover:text-zinc-800 hover:bg-zinc-50" : "border-zinc-700 bg-zinc-900/40 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50 hover:border-zinc-600"}`}
             >
               ⚙ Configure help
             </button>
 
+            {/* Appearance */}
+            <div className={`mt-4 pt-4 border-t ${isLight ? "border-zinc-200" : "border-zinc-700/50"}`}>
+              <h3 className={`text-[11px] uppercase tracking-widest font-semibold mb-2 px-1 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>Theme</h3>
+              <div className={`flex rounded-lg p-1 gap-1 ${isLight ? "bg-zinc-100" : "bg-zinc-900/60"}`}>
+                {(["auto","light","dark"] as const).map(v=> {
+                  const active = theme.pref===v;
+                  return (
+                    <button
+                      key={v}
+                      onClick={()=>theme.setPref(v)}
+                      className={`flex-1 text-[11px] px-2 py-1.5 rounded-md font-medium capitalize transition-colors ${active ? (isLight ? "bg-white text-zinc-900 shadow-sm border border-zinc-200" : "bg-zinc-700 text-zinc-100 shadow-sm") : (isLight ? "text-zinc-500 hover:text-zinc-700" : "text-zinc-400 hover:text-zinc-200")}`}
+                    >
+                      {v}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Backup Section */}
-            <div className="mt-4 pt-4 border-t border-zinc-700/50">
-              <h3 className="text-[11px] uppercase tracking-widest font-semibold text-zinc-400 mb-2 px-1">Cloud Backup</h3>
+            <div className={`mt-4 pt-4 border-t ${isLight ? "border-zinc-200" : "border-zinc-700/50"}`}>
+              <h3 className={`text-[11px] uppercase tracking-widest font-semibold mb-2 px-1 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>Cloud Backup</h3>
               {!backup.ui.backupEnabled ? (
                 <>
                   <button
                     onClick={() => backup.setUi(p => ({ ...p, showEnableBackups: true }))}
-                    className="w-full text-[12px] px-3 py-2.5 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100 transition-colors font-medium flex items-center justify-center gap-1.5"
+                    className={`w-full text-[12px] px-3 py-2.5 rounded-lg border transition-colors font-medium flex items-center justify-center gap-1.5 ${isLight ? "bg-white border-zinc-300 text-zinc-700 hover:bg-zinc-50" : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100"}`}
                   >
                     ☁️ Enable backups
                   </button>
-                  <div className="text-[10px] text-zinc-500 mt-1.5 px-1 leading-snug">
+                  <div className={`text-[10px] mt-1.5 px-1 leading-snug ${isLight ? "text-zinc-500" : "text-zinc-500"}`}>
                     Encrypted with 6-digit PIN. We cannot see what we are storing. It is not perfect, but it is private.
                   </div>
                 </>
               ) : (
                 <div className="space-y-2">
                   {backup.user.discord ? (
-                    <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-zinc-900/60 border border-zinc-700/40">
+                    <div className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border ${isLight ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900/60 border-zinc-700/40"}`}>
                       {backup.user.discord.avatar ? (
                         <img
                           src={`https://cdn.discordapp.com/avatars/${backup.user.discord.id}/${backup.user.discord.avatar}.png?size=64`}
@@ -701,24 +723,24 @@ export default function LabPage() {
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="text-[12px] font-medium text-zinc-200 truncate">{backup.user.discord.username || "Discord user"}</div>
-                        <div className="text-[10px] text-zinc-500">Backup enabled</div>
+                        <div className={`text-[12px] font-medium truncate ${isLight ? "text-zinc-800" : "text-zinc-200"}`}>{backup.user.discord.username || "Discord user"}</div>
+                        <div className={`text-[10px] ${isLight ? "text-zinc-500" : "text-zinc-500"}`}>Backup enabled</div>
                       </div>
                     </div>
                   ) : (
-                    <div className="text-[11px] text-zinc-400 px-1">Backup enabled</div>
+                    <div className={`text-[11px] px-1 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Backup enabled</div>
                   )}
 
                   <button
                     onClick={() => backup.onBackupAction("backup")}
-                    className="w-full text-[12px] px-3 py-2 rounded-lg bg-amber-400 text-black hover:bg-amber-300 font-semibold flex items-center justify-center gap-1.5"
+                    className={`w-full text-[12px] px-3 py-2 rounded-lg font-semibold flex items-center justify-center gap-1.5 ${isLight ? "bg-sky-500 text-white hover:bg-sky-600" : "bg-amber-400 text-black hover:bg-amber-300"}`}
                   >
                     ↑ Backup now
                   </button>
 
                   <button
                     onClick={() => backup.onBackupAction("restore")}
-                    className="w-full text-[12px] px-3 py-2 rounded-lg border border-zinc-700 bg-zinc-900/40 text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100 transition-colors"
+                    className={`w-full text-[12px] px-3 py-2 rounded-lg border transition-colors ${isLight ? "bg-white border-zinc-300 text-zinc-700 hover:bg-zinc-50" : "border-zinc-700 bg-zinc-900/40 text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100"}`}
                   >
                     ↓ Restore
                   </button>
@@ -726,36 +748,36 @@ export default function LabPage() {
                   <div className="flex gap-1.5">
                     <button
                       onClick={() => backup.onDisable("delete")}
-                      className="flex-1 text-[11px] px-2 py-1.5 rounded-md bg-zinc-800 text-zinc-400 hover:text-red-300 hover:bg-zinc-700"
+                      className={`flex-1 text-[11px] px-2 py-1.5 rounded-md ${isLight ? "bg-zinc-100 text-zinc-500 hover:text-red-600 hover:bg-zinc-200" : "bg-zinc-800 text-zinc-400 hover:text-red-300 hover:bg-zinc-700"}`}
                     >
                       Delete cloud
                     </button>
                     <button
                       onClick={() => backup.onDisable("disable")}
-                      className="flex-1 text-[11px] px-2 py-1.5 rounded-md bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700"
+                      className={`flex-1 text-[11px] px-2 py-1.5 rounded-md ${isLight ? "bg-zinc-100 text-zinc-500 hover:text-zinc-700 hover:bg-zinc-200" : "bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700"}`}
                     >
                       Disable
                     </button>
                   </div>
 
-                  {backup.ui.lastBackupISO ? <div className="text-[10px] text-zinc-500 px-1">Backed up {backup.ui.lastBackupSize ? `${formatBackupBytes(backup.ui.lastBackupSize)} at ` : ""}{formatLocalTimestamp(new Date(backup.ui.lastBackupISO))}</div> : null}
-                  {backup.status ? <div className="text-[10px] text-amber-200/80 px-1 break-words">{backup.status}</div> : null}
+                  {backup.ui.lastBackupISO ? <div className={`text-[10px] px-1 ${isLight ? "text-zinc-500" : "text-zinc-500"}`}>Backed up {backup.ui.lastBackupSize ? `${formatBackupBytes(backup.ui.lastBackupSize)} at ` : ""}{formatLocalTimestamp(new Date(backup.ui.lastBackupISO))}</div> : null}
+                  {backup.status ? <div className={`text-[10px] px-1 break-words ${isLight ? "text-blue-600" : "text-amber-200/80"}`}>{backup.status}</div> : null}
                 </div>
               )}
-              {!backup.ui.backupEnabled && backup.status ? <div className="text-[10px] text-amber-200/80 mt-2 px-1 break-words">{backup.status}</div> : null}
+              {!backup.ui.backupEnabled && backup.status ? <div className={`text-[10px] mt-2 px-1 break-words ${isLight ? "text-blue-600" : "text-amber-200/80"}`}>{backup.status}</div> : null}
             </div>
           </div>
         </div>
 
-        <div className="px-3 py-3 border-t border-zinc-700/70 text-[11px] text-zinc-500">
+        <div className={`px-3 py-3 border-t text-[11px] ${isLight ? "border-zinc-200 text-zinc-500" : "border-zinc-700/70 text-zinc-500"}`}>
           <button
             onClick={() => setShowPrivacy(true)}
-            className="text-[11px] text-zinc-400 hover:text-zinc-200 underline underline-offset-2"
+            className={`text-[11px] underline underline-offset-2 ${isLight ? "text-zinc-500 hover:text-zinc-800" : "text-zinc-400 hover:text-zinc-200"}`}
           >
             Privacy Policy
           </button>
           <div>
-            <a href="/how-we-store" className="text-[11px] text-zinc-400 hover:text-zinc-200 underline underline-offset-2">
+            <a href="/how-we-store" className={`text-[11px] underline underline-offset-2 ${isLight ? "text-zinc-500 hover:text-zinc-800" : "text-zinc-400 hover:text-zinc-200"}`}>
               How we store your data
             </a>
           </div>
@@ -765,10 +787,10 @@ export default function LabPage() {
       {/* Main */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Mobile top bar with hamburger tight spacing 18x14 2px gap3 */}
-        <div className="lg:hidden sticky top-0 z-20 flex items-center gap-3 px-3 py-3 border-b border-zinc-800 bg-zinc-900/95 backdrop-blur">
+        <div className={`lg:hidden sticky top-0 z-20 flex items-center gap-3 px-3 py-3 border-b backdrop-blur ${isLight ? "border-zinc-200 bg-white/90" : "border-zinc-800 bg-zinc-900/95"}`}>
           <button
             onClick={() => setDrawerOpen(true)}
-            className="h-9 w-9 grid place-items-center rounded-lg bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
+            className={`h-9 w-9 grid place-items-center rounded-lg ${isLight ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200" : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700"}`}
             aria-label="Open menu"
           >
             <span className="flex flex-col justify-center" style={{ width: "18px", height: "14px", gap: "3px" }}>
@@ -779,7 +801,7 @@ export default function LabPage() {
           </button>
           <div className="min-w-0 flex-1">
             <div className="font-semibold text-[15px] tracking-tight leading-none">🐉 D&D Chants</div>
-            <div className="text-[11px] text-zinc-400 truncate mt-0.5">
+            <div className={`text-[11px] truncate mt-0.5 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
               {activeCharacter ? `${characterName || "Character"} • ${totalVerbal}` : "No character"}
             </div>
           </div>
@@ -789,7 +811,7 @@ export default function LabPage() {
           {/* Desktop header - no Refresh, no active details here */}
           <header className="mb-5 hidden lg:block">
             <h1 className="text-xl md:text-2xl font-bold tracking-tight">🐉 D&D Chants</h1>
-            <p className="mt-1 text-[13px] md:text-sm text-zinc-400 max-w-[34rem] leading-snug">
+            <p className={`mt-1 text-[13px] md:text-sm max-w-[34rem] leading-snug ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>
               {totalVerbal ? `${totalVerbal} spells grouped by school. ` : ""}Type a new English cue, hit ▶ to translate, 🔊 to hear it.
             </p>
           </header>
@@ -804,7 +826,7 @@ export default function LabPage() {
                   <button
                     key={s}
                     onClick={() => setActiveSchool(s as School)}
-                    className="text-[13px] px-3 py-1.5 rounded-full border font-medium transition-colors bg-amber-400 text-black border-amber-400"
+                    className={`text-[13px] px-3 py-1.5 rounded-full border font-medium transition-colors ${isLight ? "bg-sky-500 text-white border-sky-500" : "bg-amber-400 text-black border-amber-400"}`}
                     title={`${s} - ${SCHOOL_DESCS[s]} (${count} spells)`}
                   >
                     {count > 0 ? `${s} · ${count}` : `${s} · 0`}
@@ -816,7 +838,7 @@ export default function LabPage() {
                   <button
                     key={s}
                     onClick={() => setActiveSchool(s as School)}
-                    className="text-[13px] px-3 py-1.5 rounded-full border font-medium transition-colors bg-zinc-800 text-zinc-500 opacity-60 hover:opacity-80 border-zinc-700/60 hover:bg-zinc-700 hover:text-zinc-400"
+                    className={`text-[13px] px-3 py-1.5 rounded-full border font-medium transition-colors opacity-60 hover:opacity-80 ${isLight ? "bg-white text-zinc-400 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-500" : "bg-zinc-800 text-zinc-500 border-zinc-700/60 hover:bg-zinc-700 hover:text-zinc-400"}`}
                     title={`${s} - ${SCHOOL_DESCS[s]} (no spells)`}
                   >
                     {`${s} · 0`}
@@ -827,7 +849,7 @@ export default function LabPage() {
                 <button
                   key={s}
                   onClick={() => setActiveSchool(s as School)}
-                  className="text-[13px] px-3 py-1.5 rounded-full border font-medium transition-colors bg-zinc-800 text-zinc-200 border-zinc-700 hover:bg-zinc-700"
+                  className={`text-[13px] px-3 py-1.5 rounded-full border font-medium transition-colors ${isLight ? "bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-50" : "bg-zinc-800 text-zinc-200 border-zinc-700 hover:bg-zinc-700"}`}
                   title={`${s} - ${SCHOOL_DESCS[s]} (${count} spells)`}
                 >
                   {`${s} · ${count}`}
@@ -838,79 +860,79 @@ export default function LabPage() {
 
           {totalVerbal === 0 ? (
             !hasChars ? (
-              <div className="rounded-xl border border-zinc-700 bg-zinc-800 p-6 md:p-8">
+              <div className={`rounded-xl border p-6 md:p-8 ${isLight ? "border-zinc-200 bg-white" : "border-zinc-700 bg-zinc-800"}`}>
                 <h2 className="text-[18px] font-semibold tracking-tight mb-1">Get started</h2>
-                <p className="text-[13px] text-zinc-400 mb-6 max-w-[520px]">Link a character, pick a spell, write a cue. Everything saves locally.</p>
+                <p className={`text-[13px] mb-6 max-w-[520px] ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Link a character, pick a spell, write a cue. Everything saves locally.</p>
                 <div className="grid gap-4 md:grid-cols-3 mb-6">
-                  <div className="rounded-lg bg-zinc-900/70 border border-zinc-700/60 p-4 flex gap-3">
-                    <div className="h-7 w-7 rounded-full bg-amber-400 text-black grid place-items-center text-[12px] font-bold shrink-0">1</div>
+                  <div className={`rounded-lg border p-4 flex gap-3 ${isLight ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900/70 border-zinc-700/60"}`}>
+                    <div className={`h-7 w-7 rounded-full grid place-items-center text-[12px] font-bold shrink-0 ${isLight ? "bg-sky-500 text-white" : "bg-amber-400 text-black"}`}>1</div>
                     <div className="min-w-0">
-                      <div className="text-[13px] font-semibold text-zinc-100">Link your D&D Beyond character</div>
-                      <div className="text-[12px] text-zinc-400 mt-1 leading-snug">Paste your character ID or URL from D&D Beyond. We fetch via <code className="text-[11px] bg-zinc-800 px-1 py-0.5 rounded">/api/dndbeyond</code> proxy, no copy stored.</div>
+                      <div className={`text-[13px] font-semibold ${isLight ? "text-zinc-900" : "text-zinc-100"}`}>Link your D&D Beyond character</div>
+                      <div className={`text-[12px] mt-1 leading-snug ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Paste your character ID or URL from D&D Beyond. We fetch via <code className={`text-[11px] px-1 py-0.5 rounded ${isLight ? "bg-zinc-100 text-zinc-700" : "bg-zinc-800 text-zinc-300"}`}>/api/dndbeyond</code> proxy, no copy stored.</div>
                     </div>
                   </div>
-                  <div className="rounded-lg bg-zinc-900/70 border border-zinc-700/60 p-4 flex gap-3">
-                    <div className="h-7 w-7 rounded-full bg-amber-400 text-black grid place-items-center text-[12px] font-bold shrink-0">2</div>
+                  <div className={`rounded-lg border p-4 flex gap-3 ${isLight ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900/70 border-zinc-700/60"}`}>
+                    <div className={`h-7 w-7 rounded-full grid place-items-center text-[12px] font-bold shrink-0 ${isLight ? "bg-sky-500 text-white" : "bg-amber-400 text-black"}`}>2</div>
                     <div className="min-w-0">
-                      <div className="text-[13px] font-semibold text-zinc-100">Brainstorm with Google</div>
-                      <div className="text-[12px] text-zinc-400 mt-1 leading-snug">Stuck? Use Help to brainstorm ideas, then edit your cue, translate and play audio.</div>
+                      <div className={`text-[13px] font-semibold ${isLight ? "text-zinc-900" : "text-zinc-100"}`}>Brainstorm with Google</div>
+                      <div className={`text-[12px] mt-1 leading-snug ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Stuck? Use Help to brainstorm ideas, then edit your cue, translate and play audio.</div>
                     </div>
                   </div>
-                  <div className="rounded-lg bg-zinc-900/70 border border-zinc-700/60 p-4 flex gap-3">
-                    <div className="h-7 w-7 rounded-full bg-amber-400 text-black grid place-items-center text-[12px] font-bold shrink-0">3</div>
+                  <div className={`rounded-lg border p-4 flex gap-3 ${isLight ? "bg-zinc-50 border-zinc-200" : "bg-zinc-900/70 border-zinc-700/60"}`}>
+                    <div className={`h-7 w-7 rounded-full grid place-items-center text-[12px] font-bold shrink-0 ${isLight ? "bg-sky-500 text-white" : "bg-amber-400 text-black"}`}>3</div>
                     <div className="min-w-0">
-                      <div className="text-[13px] font-semibold text-zinc-100">Save and back up</div>
-                      <div className="text-[12px] text-zinc-400 mt-1 leading-snug">Everything saves locally. Enable cloud backup with Discord + 6-digit PIN when ready.</div>
+                      <div className={`text-[13px] font-semibold ${isLight ? "text-zinc-900" : "text-zinc-100"}`}>Save and back up</div>
+                      <div className={`text-[12px] mt-1 leading-snug ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Everything saves locally. Enable cloud backup with Discord + 6-digit PIN when ready.</div>
                     </div>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => { setDrawerOpen(true); setShowAddCharacter(true); }}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-amber-400 text-black text-[13px] font-semibold hover:bg-amber-300"
+                    className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-[13px] font-semibold ${isLight ? "bg-sky-500 text-white hover:bg-sky-600" : "bg-amber-400 text-black hover:bg-amber-300"}`}
                   >
                     + Add Character
                   </button>
                   <button
                     onClick={() => setDrawerOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-zinc-700 text-zinc-200 text-[13px] font-medium hover:bg-zinc-600 lg:hidden"
+                    className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-[13px] font-medium lg:hidden ${isLight ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200" : "bg-zinc-700 text-zinc-200 hover:bg-zinc-600"}`}
                   >
                     Open menu
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="px-6 py-12 text-center space-y-3 rounded-xl border border-zinc-700 bg-zinc-800">
+              <div className={`px-6 py-12 text-center space-y-3 rounded-xl border ${isLight ? "border-zinc-200 bg-white" : "border-zinc-700 bg-zinc-800"}`}>
                 <div className="text-lg font-semibold">No spells yet</div>
-                <div className="text-sm text-zinc-400 max-w-[420px] mx-auto">
-                  Link your D&amp;D Beyond character from the left drawer to see your spells here. The app fetches live via the proxy at <span className="text-zinc-300">/api/dndbeyond/{`{id}`}</span>.
+                <div className={`text-sm max-w-[420px] mx-auto ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>
+                  Link your D&amp;D Beyond character from the left drawer to see your spells here. The app fetches live via the proxy at <span className={isLight ? "text-zinc-800" : "text-zinc-300"}>/api/dndbeyond/{`{id}`}</span>.
                 </div>
-                <div className="text-xs text-zinc-500 pt-2">Once linked, schools show count only and dim when empty. Everything is saved locally.</div>
+                <div className={`text-xs pt-2 ${isLight ? "text-zinc-500" : "text-zinc-500"}`}>Once linked, schools show count only and dim when empty. Everything is saved locally.</div>
                 <button
                   onClick={() => { setDrawerOpen(true); setShowAddCharacter(true); }}
-                  className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-amber-400 text-black text-[13px] font-semibold hover:bg-amber-300 lg:hidden"
+                  className={`mt-3 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-semibold ${isLight ? "bg-sky-500 text-white hover:bg-sky-600" : "bg-amber-400 text-black hover:bg-amber-300"} lg:hidden`}
                 >
                   + Add Character
                 </button>
               </div>
             )
           ) : (
-            <section className="mb-5 md:mb-8 rounded-[14px] md:rounded-xl bg-zinc-800 border border-zinc-700 overflow-hidden">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3 px-3 py-3 md:px-4 border-b border-zinc-700 bg-zinc-800">
+            <section className={`mb-5 md:mb-8 rounded-[14px] md:rounded-xl border overflow-hidden ${isLight ? "bg-white border-zinc-200" : "bg-zinc-800 border-zinc-700"}`}>
+              <div className={`flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3 px-3 py-3 md:px-4 border-b ${isLight ? "border-zinc-200 bg-zinc-50" : "border-zinc-700 bg-zinc-800"}`}>
                 <div className="flex items-center gap-2">
                   <h2 className="text-[16px] md:text-lg font-semibold">
-                    <span className="text-amber-300/90">{activeSchool}</span>
-                    <span className="text-zinc-400 font-normal"> - {SCHOOL_DESCS[activeSchool]}</span>
+                    <span className={isLight ? "text-blue-600" : "text-amber-300/90"}>{activeSchool}</span>
+                    <span className={`font-normal ${isLight ? "text-zinc-600" : "text-zinc-400"}`}> - {SCHOOL_DESCS[activeSchool]}</span>
                   </h2>
-                  <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-400">
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full border ${isLight ? "bg-white border-zinc-200 text-zinc-600" : "bg-zinc-900 border-zinc-700 text-zinc-400"}`}>
                     {activeSpells.length}
                   </span>
                 </div>
                 <label className="flex items-center gap-2 text-sm w-full md:w-auto">
-                  <span className="text-zinc-400 text-xs md:text-sm shrink-0">Language</span>
+                  <span className={`text-xs md:text-sm shrink-0 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Language</span>
                   <select
                     aria-label={`Language for ${activeSchool}`}
-                    className="flex-1 md:flex-none rounded-lg md:rounded-md border border-zinc-700 bg-zinc-800 text-zinc-100 px-2.5 py-2.5 md:py-1.5 text-[14px] md:text-sm max-w-none md:max-w-[14rem] focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    className={`flex-1 md:flex-none rounded-lg md:rounded-md border px-2.5 py-2.5 md:py-1.5 text-[14px] md:text-sm max-w-none md:max-w-[14rem] focus:outline-none focus:ring-2 ${isLight ? "focus:ring-blue-500 border-zinc-300 bg-white text-zinc-900" : "focus:ring-amber-400 border-zinc-700 bg-zinc-800 text-zinc-100"}`}
                     value={activeTargetLang}
                     onChange={(e) => {
                       if (!activeId) return;
@@ -934,7 +956,7 @@ export default function LabPage() {
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="text-xs uppercase tracking-wide text-zinc-400 border-b border-zinc-700">
+                    <tr className={`text-xs uppercase tracking-wide border-b ${isLight ? "text-zinc-500 border-zinc-200 bg-zinc-50" : "text-zinc-400 border-zinc-700 bg-zinc-800"}`}>
                       <th className="py-2 px-2 font-medium align-middle">Spell</th>
                       <th className="py-2 px-2 font-medium align-middle">Try phrasing</th>
                       <th className="py-2 px-1 font-medium align-middle text-center">Go</th>
@@ -945,7 +967,7 @@ export default function LabPage() {
                   <tbody className="[&>tr>td]:align-middle">
                     {activeSpells.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-8 text-center text-sm text-zinc-400">
+                        <td colSpan={5} className={`py-8 text-center text-sm ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
                           No spells in {activeSchool}. Link a character to populate.
                         </td>
                       </tr>
@@ -974,9 +996,9 @@ export default function LabPage() {
               </div>
 
               {/* Mobile cards */}
-              <div className="md:hidden divide-y divide-zinc-700">
+              <div className={`md:hidden divide-y ${isLight ? "divide-zinc-200" : "divide-zinc-700"}`}>
                 {activeSpells.length === 0 ? (
-                  <div className="p-8 text-center text-sm text-zinc-400">No spells in {activeSchool}. Link a character to populate.</div>
+                  <div className={`p-8 text-center text-sm ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>No spells in {activeSchool}. Link a character to populate.</div>
                 ) : (
                   activeSpells.map((sp) => {
                     const extra = activeExtras[sp.name];
@@ -1007,11 +1029,11 @@ export default function LabPage() {
       {/* Add Character modal */}
       {showAddCharacter ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => { setShowAddCharacter(false); setLinkInput(""); setLinkStatus(""); }} role="dialog" aria-modal="true" aria-labelledby="add-char-title">
-          <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 max-w-sm w-full shadow-2xl" onClick={e=>e.stopPropagation()}>
-            <h3 id="add-char-title" className="text-sm font-semibold text-zinc-100 mb-3">Add Character</h3>
-            <div className="text-[11px] font-semibold text-zinc-300 uppercase tracking-wide mb-2">D&D Beyond URL or ID</div>
+          <div className={`border rounded-xl p-5 max-w-sm w-full shadow-2xl ${isLight ? "bg-white border-zinc-200" : "bg-zinc-800 border-zinc-700"}`} onClick={e=>e.stopPropagation()}>
+            <h3 id="add-char-title" className={`text-sm font-semibold mb-3 ${isLight ? "text-zinc-900" : "text-zinc-100"}`}>Add Character</h3>
+            <div className={`text-[11px] font-semibold uppercase tracking-wide mb-2 ${isLight ? "text-zinc-600" : "text-zinc-300"}`}>D&D Beyond URL or ID</div>
             <input
-              className="w-full h-10 rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 px-3 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className={`w-full h-10 rounded-lg border px-3 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 ${isLight ? "focus:ring-blue-500 border-zinc-300 bg-white text-zinc-900" : "focus:ring-amber-400 border-zinc-700 bg-zinc-900 text-zinc-100"}`}
               value={linkInput}
               onChange={(e) => setLinkInput(e.target.value)}
               placeholder="https://www.dndbeyond.com/characters/12345678 or 12345678"
@@ -1019,10 +1041,10 @@ export default function LabPage() {
               autoFocus
             />
             <div className="flex gap-2 mt-3">
-              <button onClick={onLinkClick} disabled={isLinking} className="flex-1 bg-amber-400 text-black rounded-lg text-sm h-10 font-semibold hover:bg-amber-300 disabled:opacity-60" aria-label="Link D&D Beyond character">
+              <button onClick={onLinkClick} disabled={isLinking} className={`flex-1 rounded-lg text-sm h-10 font-semibold disabled:opacity-60 ${isLight ? "bg-sky-500 text-white hover:bg-sky-600" : "bg-amber-400 text-black hover:bg-amber-300"}`} aria-label="Link D&D Beyond character">
                 {isLinking ? "Linking…" : characters.length ? "Add Character" : "Link Character"}
               </button>
-              <button onClick={() => { setShowAddCharacter(false); setLinkInput(""); setLinkStatus(""); }} className="bg-zinc-700 text-zinc-200 rounded-lg text-sm h-10 px-4 hover:bg-zinc-600" aria-label="Cancel add character">
+              <button onClick={() => { setShowAddCharacter(false); setLinkInput(""); setLinkStatus(""); }} className={`rounded-lg text-sm h-10 px-4 ${isLight ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200" : "bg-zinc-700 text-zinc-200 hover:bg-zinc-600"}`} aria-label="Cancel add character">
                 Cancel
               </button>
             </div>
@@ -1033,13 +1055,13 @@ export default function LabPage() {
 
       {pendingDeleteId ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 max-w-sm w-full shadow-2xl">
+          <div className={`border rounded-xl p-5 max-w-sm w-full shadow-2xl ${isLight ? "bg-white border-zinc-200" : "bg-zinc-800 border-zinc-700"}`}>
             <h3 className="text-sm font-semibold text-zinc-100 mb-2">Delete character?</h3>
-            <p className="text-xs text-zinc-400 mb-4">
+            <p className={`text-xs mb-4 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>
               This will remove {characters.find((c) => c.characterId === pendingDeleteId)?.characterName || `Char ${pendingDeleteId}`} and all saved chants for this character from this browser. The action cannot be undone.
             </p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setPendingDeleteId(null)} className="bg-zinc-700 text-zinc-200 rounded-lg text-xs h-8 px-4 hover:bg-zinc-600">
+              <button onClick={() => setPendingDeleteId(null)} className={`rounded-lg text-xs h-8 px-4 ${isLight ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200" : "bg-zinc-700 text-zinc-200 hover:bg-zinc-600"}`}>
                 Cancel
               </button>
               <button onClick={confirmRemoveCharacter} className="bg-red-600 text-white rounded-lg text-xs h-8 px-4 hover:bg-red-500 font-semibold">
@@ -1056,15 +1078,15 @@ export default function LabPage() {
           onClick={() => setShowHelpConfig(false)}
         >
           <div
-            className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 max-w-md w-full shadow-2xl"
+            className={`border rounded-xl p-5 max-w-md w-full shadow-2xl ${isLight ? "bg-white border-zinc-200" : "bg-zinc-800 border-zinc-700"}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-sm font-semibold text-zinc-100 mb-2">Configure help</h3>
-            <p className="text-xs text-zinc-400 mb-3 leading-relaxed">
+            <h3 className={`text-sm font-semibold mb-2 ${isLight ? "text-zinc-900" : "text-zinc-100"}`}>Configure help</h3>
+            <p className={`text-xs mb-3 leading-relaxed ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>
               This template is used when you click the Help button 💬. Use {"{spell}"} and {"{language}"} as placeholders. They will be replaced with the spell name and language. {"{school}"} is also available.
             </p>
             <textarea
-              className="w-full min-h-[96px] rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-y"
+              className={`w-full min-h-[96px] rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y ${isLight ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-700 bg-zinc-900 text-zinc-100"}`}
               rows={4}
               value={helpTemplate}
               onChange={(e) => setHelpTemplate(e.target.value)}
@@ -1073,13 +1095,13 @@ export default function LabPage() {
             <div className="flex justify-between gap-2 mt-4">
               <button
                 onClick={() => setHelpTemplate(DEFAULT_HELP_TEMPLATE)}
-                className="bg-zinc-700 text-zinc-200 rounded-lg text-xs h-8 px-4 hover:bg-zinc-600"
+                className={`rounded-lg text-xs h-8 px-4 ${isLight ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200" : "bg-zinc-700 text-zinc-200 hover:bg-zinc-600"}`}
               >
                 Default
               </button>
               <button
                 onClick={() => setShowHelpConfig(false)}
-                className="bg-amber-400 text-black rounded-lg text-xs h-8 px-4 hover:bg-amber-300 font-semibold"
+                className={`rounded-lg text-xs h-8 px-4 font-semibold ${isLight ? "bg-sky-500 text-white hover:bg-sky-600" : "bg-amber-400 text-black hover:bg-amber-300"}`}
               >
                 Done
               </button>
@@ -1094,20 +1116,20 @@ export default function LabPage() {
           onClick={() => setShowPrivacy(false)}
         >
           <div
-            className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 max-w-md w-full max-h-[80vh] overflow-y-auto shadow-2xl"
+            className={`border rounded-xl p-5 max-w-md w-full max-h-[80vh] overflow-y-auto shadow-2xl ${isLight ? "bg-white border-zinc-200" : "bg-zinc-800 border-zinc-700"}`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-zinc-100">Privacy Policy</h3>
+              <h3 className={`text-sm font-semibold ${isLight ? "text-zinc-900" : "text-zinc-100"}`}>Privacy Policy</h3>
               <button
                 onClick={() => setShowPrivacy(false)}
-                className="h-7 w-7 grid place-items-center rounded-md bg-zinc-700 hover:bg-zinc-600 text-zinc-300"
+                className={`h-7 w-7 grid place-items-center rounded-md ${isLight ? "bg-zinc-100 hover:bg-zinc-200 text-zinc-600" : "bg-zinc-700 hover:bg-zinc-600 text-zinc-300"}`}
                 aria-label="Close"
               >
                 ✕
               </button>
             </div>
-            <div className="space-y-3 text-[13px] leading-relaxed text-zinc-300">
+            <div className={`space-y-3 text-[13px] leading-relaxed ${isLight ? "text-zinc-700" : "text-zinc-300"}`}>
               <p>Everything you type and your characters are stored locally in your browser. We do not have accounts or servers storing your personal stuff, unless you enable cloud backups.</p>
               <p>When you load a character, we fetch it from D&amp;D Beyond via our proxy (api/dndbeyond). We do not keep a copy on our servers, we just pass it through. We only do this because dndbeyond.com does not allow you to fetch directly.</p>
               <p>When you translate text, you send it directly to Google for translation. We never see it. When you play audio, we send the spell text and language to Google Translate via our proxy (api/tts). Similar to dndbeyond.com, this is a technical limitation with Google. No personal info, just the chant text.</p>
@@ -1118,7 +1140,7 @@ export default function LabPage() {
             <div className="flex justify-end mt-5">
               <button
                 onClick={() => setShowPrivacy(false)}
-                className="bg-amber-400 text-black rounded-lg text-xs h-8 px-4 hover:bg-amber-300 font-semibold"
+                className={`rounded-lg text-xs h-8 px-4 font-semibold ${isLight ? "bg-sky-500 text-white hover:bg-sky-600" : "bg-amber-400 text-black hover:bg-amber-300"}`}
               >
                 Done
               </button>
@@ -1130,32 +1152,32 @@ export default function LabPage() {
       
       {backup.pinDialog?.open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={()=>backup.setPinDialog({open:false,mode:backup.pinDialog.mode})}>
-          <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 max-w-sm w-full shadow-2xl" onClick={e=>e.stopPropagation()}>
-            <h3 className="text-sm font-semibold text-zinc-100 mb-2">{backup.pinDialog.mode==="backup"?"Enter PIN for backup":"Enter PIN to decrypt"}</h3>
-            <p className="text-[12px] text-zinc-400 mb-3">6-digit PIN, same PIN you used to enable backups.</p>
-            <input id="pin-dialog-input" type="password" inputMode="numeric" maxLength={6} placeholder="123456" className="w-full h-10 rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 px-3 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-400" onKeyDown={e=>{ if(e.key==="Enter"){ const el=document.getElementById("pin-dialog-input") as HTMLInputElement; const v=el?.value||""; if(/^\d{6}$/.test(v)) backup.pinDialog.resolve?.(v); } if(e.key==="Escape") backup.pinDialog.resolve?.(null); }} />
-            <div className="flex justify-between gap-2 mt-4"><button onClick={()=>backup.pinDialog.resolve?.(null)} className="bg-zinc-700 text-zinc-200 rounded-lg text-xs h-8 px-4 hover:bg-zinc-600">Cancel</button><button onClick={()=>{ const el=document.getElementById("pin-dialog-input") as HTMLInputElement; const v=el?.value||""; if(/^\d{6}$/.test(v)) backup.pinDialog.resolve?.(v); }} className="bg-amber-400 text-black rounded-lg text-xs h-8 px-4 hover:bg-amber-300 font-semibold">Confirm</button></div>
+          <div className={`border rounded-xl p-5 max-w-sm w-full shadow-2xl ${isLight ? "bg-white border-zinc-200" : "bg-zinc-800 border-zinc-700"}`} onClick={e=>e.stopPropagation()}>
+            <h3 className={`text-sm font-semibold mb-2 ${isLight ? "text-zinc-900" : "text-zinc-100"}`}>{backup.pinDialog.mode==="backup"?"Enter PIN for backup":"Enter PIN to decrypt"}</h3>
+            <p className={`text-[12px] mb-3 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>6-digit PIN, same PIN you used to enable backups.</p>
+            <input id="pin-dialog-input" type="password" inputMode="numeric" maxLength={6} placeholder="123456" className={`w-full h-10 rounded-lg border px-3 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 ${isLight ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-700 bg-zinc-900 text-zinc-100"}`} onKeyDown={e=>{ if(e.key==="Enter"){ const el=document.getElementById("pin-dialog-input") as HTMLInputElement; const v=el?.value||""; if(/^\d{6}$/.test(v)) backup.pinDialog.resolve?.(v); } if(e.key==="Escape") backup.pinDialog.resolve?.(null); }} />
+            <div className="flex justify-between gap-2 mt-4"><button onClick={()=>backup.pinDialog.resolve?.(null)} className={`rounded-lg text-xs h-8 px-4 ${isLight ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200" : "bg-zinc-700 text-zinc-200 hover:bg-zinc-600"}`}>Cancel</button><button onClick={()=>{ const el=document.getElementById("pin-dialog-input") as HTMLInputElement; const v=el?.value||""; if(/^\d{6}$/.test(v)) backup.pinDialog.resolve?.(v); }} className={`rounded-lg text-xs h-8 px-4 font-semibold ${isLight ? "bg-sky-500 text-white hover:bg-sky-600" : "bg-amber-400 text-black hover:bg-amber-300"}`}>Confirm</button></div>
           </div>
         </div>
       ) : null}
 
       {showWelcome ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={closeWelcome} role="dialog" aria-modal="true" aria-labelledby="welcome-title">
-          <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6 max-w-md w-full shadow-2xl" onClick={e=>e.stopPropagation()}>
-            <div className="h-8 w-8 rounded-lg bg-amber-400 text-black grid place-items-center font-bold text-[14px] mb-3">🐉</div>
-            <h3 id="welcome-title" className="text-[16px] font-semibold text-zinc-100 mb-2">Your chants live here</h3>
-            <p className="text-[13px] leading-relaxed text-zinc-300 mb-5">Everything lives in this browser. No account needed. Cloud backup is optional and encrypted with a PIN only you know.</p>
+          <div className={`border rounded-xl p-6 max-w-md w-full shadow-2xl ${isLight ? "bg-white border-zinc-200" : "bg-zinc-800 border-zinc-700"}`} onClick={e=>e.stopPropagation()}>
+            <div className={`h-8 w-8 rounded-lg grid place-items-center font-bold text-[14px] mb-3 ${isLight ? "bg-sky-500 text-white" : "bg-amber-400 text-black"}`}>🐉</div>
+            <h3 id="welcome-title" className={`text-[16px] font-semibold mb-2 ${isLight ? "text-zinc-900" : "text-zinc-100"}`}>Your chants live here</h3>
+            <p className={`text-[13px] leading-relaxed mb-5 ${isLight ? "text-zinc-600" : "text-zinc-300"}`}>Everything lives in this browser. No account needed. Cloud backup is optional and encrypted with a PIN only you know.</p>
             <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={()=>{ closeWelcome(); setDrawerOpen(true); setShowAddCharacter(true); }}
-                className="flex-1 bg-amber-400 text-black rounded-lg text-[13px] h-10 px-4 font-semibold hover:bg-amber-300"
+                className={`flex-1 rounded-lg text-[13px] h-10 px-4 font-semibold ${isLight ? "bg-sky-500 text-white hover:bg-sky-600" : "bg-amber-400 text-black hover:bg-amber-300"}`}
                 aria-label="Add my D&D Beyond character"
               >
                 Add my character
               </button>
               <button
                 onClick={closeWelcome}
-                className="flex-1 sm:flex-none bg-zinc-700 text-zinc-200 rounded-lg text-[13px] h-10 px-4 hover:bg-zinc-600"
+                className={`flex-1 sm:flex-none rounded-lg text-[13px] h-10 px-4 ${isLight ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200" : "bg-zinc-700 text-zinc-200 hover:bg-zinc-600"}`}
                 aria-label="Dismiss welcome and continue"
               >
                 Got it
