@@ -760,7 +760,7 @@ export default function LabPage() {
                     </button>
                   </div>
 
-                  {backup.ui.lastBackupISO ? <div className={`text-[10px] px-1 ${isLight ? "text-zinc-500" : "text-zinc-500"}`}>Backed up {backup.ui.lastBackupSize ? `${formatBackupBytes(backup.ui.lastBackupSize)} at ` : ""}{formatLocalTimestamp(new Date(backup.ui.lastBackupISO))}</div> : null}
+                  {backup.ui.lastCloudAction ? <div className={`text-[10px] px-1 ${isLight ? "text-zinc-500" : "text-zinc-500"}`}>{backup.ui.lastCloudAction}</div> : null}
                   {backup.status ? <div className={`text-[10px] px-1 break-words text-accent-soft`}>{backup.status}</div> : null}
                 </div>
               )}

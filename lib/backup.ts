@@ -6,6 +6,7 @@ import { STORAGE_BACKUP_KEY, deriveKeyFromPin, exportKeyToBase64, importKeyFromB
 export const STORAGE_BACKUP_ENABLED = "dnd-chant-backup-enabled";
 export const STORAGE_LAST_BACKUP = "dnd-chant-last-backup";
 export const STORAGE_LAST_BACKUP_SIZE = "dnd-chant-last-backup-size";
+export const STORAGE_LAST_CLOUD_ACTION = "dnd-chant-last-cloud-action";
 
 export function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -69,10 +70,12 @@ export async function deleteCloudBackup() {
   if (!resp.ok || !j?.ok) throw new Error(`Delete failed ${resp.status}: ${JSON.stringify(j).slice(0,200)}`);
   localStorage.removeItem(STORAGE_LAST_BACKUP);
   try { localStorage.removeItem(STORAGE_LAST_BACKUP_SIZE); } catch {}
+  try { localStorage.removeItem(STORAGE_LAST_CLOUD_ACTION); } catch {}
 }
 
 export function disableBackupsLocal() {
   localStorage.removeItem(STORAGE_BACKUP_KEY); localStorage.removeItem(STORAGE_BACKUP_ENABLED); localStorage.removeItem(STORAGE_LAST_BACKUP);
   try { localStorage.removeItem(STORAGE_LAST_BACKUP_SIZE); } catch {}
+  try { localStorage.removeItem(STORAGE_LAST_CLOUD_ACTION); } catch {}
   try { sessionStorage.removeItem("dnd-chant-pending-pin"); sessionStorage.removeItem("dnd-chant-discord-state"); } catch {}
 }
