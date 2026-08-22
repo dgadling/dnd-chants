@@ -80,11 +80,10 @@ export function MobileCard(props: Props) {
   }, [effectiveNative, targetLang]);
 
   const handleIdiom = useCallback(() => {
-    const englishTry = input.trim() || spell.name;
     const langName = getLangName(targetLang);
-    const q = `idiom in ${langName} for "${englishTry}"`;
+    const q = `Help me come up with a short chant or idiom for the Dungeons & Dragons spell ${spell.name} in ${langName} that would sound reasonable to a native speaker.`;
     window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, "_blank", "popup,width=900,height=700");
-  }, [input, spell.name, targetLang]);
+  }, [spell.name, targetLang]);
 
   const handleSave = useCallback(() => {
     if (!effectiveNative || !input.trim()) return;
@@ -176,12 +175,11 @@ export function MobileCard(props: Props) {
 
       <div className="grid grid-cols-3 gap-2">
         <button
-          aria-label={`Idiom search for ${spell.name} mobile`}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-100 text-[14px] font-medium disabled:opacity-60 active:bg-zinc-700"
-          disabled={!input.trim()}
+          aria-label={`Chant help for ${spell.name} mobile`}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-100 text-[14px] font-medium active:bg-zinc-700"
           onClick={handleIdiom}
           type="button"
-          title={`Search idiom in ${langName}`}
+          title={`Help for ${spell.name} in ${langName}`}
         >
           <span>💬</span>
           <span className="hidden sm:inline">Idiom</span>
