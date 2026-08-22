@@ -1,7 +1,7 @@
 {
   "name": "functions",
   "description": "Firebase Functions for dnd-chants DDB proxy",
-  "engines": { "node": "20" },
+  "engines": { "node": "22" },
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
