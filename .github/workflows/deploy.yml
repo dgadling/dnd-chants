@@ -27,9 +27,12 @@ jobs:
               - 'package.json'
               - 'bun.lockb'
               - 'tsconfig.json'
+              - 'firebase.json'
+              - '.github/workflows/**'
             functions:
               - 'functions/**'
               - 'firebase.json'
+              - '.github/workflows/**'
 
   ci:
     needs: detect
