@@ -112,20 +112,20 @@ export function MobileCard(props: Props) {
     : "Save locally (browser only)";
 
   return (
-    <div className="flex flex-col gap-3 p-3 bg-[var(--surface)]">
+    <div className="flex flex-col gap-3 p-3 bg-zinc-800 border-zinc-700">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <h3 className="text-[15px] font-semibold tracking-tight text-[var(--text)] truncate">
+          <h3 className="text-[15px] font-semibold tracking-tight text-zinc-100 truncate">
             {spell.name}
           </h3>
         </div>
       </div>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-[11px] uppercase tracking-widest font-semibold text-[var(--dim)]">Try wording</span>
+        <span className="text-[11px] uppercase tracking-widest font-semibold text-zinc-400">Try wording</span>
         <input
           aria-label={`Try phrasing for ${spell.name} mobile`}
-          className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg)] dark:bg-black/30 px-3 py-3 text-[15px] text-[var(--text)] placeholder:text-[var(--dim)] focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
+          className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-3 text-[15px] text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="e.g. spying eye"
@@ -141,7 +141,7 @@ export function MobileCard(props: Props) {
 
       <button
         aria-label={`Translate ${spell.name} mobile`}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 text-black text-[15px] font-semibold h-11 active:scale-[0.98] transition-transform disabled:opacity-40 disabled:active:scale-100"
+        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 text-black text-[15px] font-semibold h-11 active:scale-[0.98] transition-transform disabled:opacity-60 disabled:active:scale-100"
         disabled={!input.trim() || isTranslating}
         onClick={handleTranslate}
         type="button"
@@ -150,16 +150,16 @@ export function MobileCard(props: Props) {
         <span>{isTranslating ? "Translating…" : `In ${langName}`}</span>
       </button>
       {transError && (
-        <div className="text-xs text-red-600 px-1" title={transError}>
+        <div className="text-xs text-red-400 px-1" title={transError}>
           Translation error: {transError.slice(0, 120)} – check key / try again
         </div>
       )}
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-[11px] uppercase tracking-widest font-semibold text-[var(--dim)]">Translation</span>
+        <span className="text-[11px] uppercase tracking-widest font-semibold text-zinc-400">Translation</span>
         <input
           aria-label={`Translation for ${spell.name} mobile`}
-          className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg)] dark:bg-black/30 px-3 text-[15px] text-[var(--text)] placeholder:text-[var(--dim)] focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
+          className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 text-[15px] text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
           style={{ height: "44px" }}
           value={boxText}
           onChange={(e) => setBoxText(e.target.value)}
@@ -170,7 +170,7 @@ export function MobileCard(props: Props) {
       <div className="grid grid-cols-2 gap-2">
         <button
           aria-label={`Play audio for ${spell.name} mobile`}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[14px] font-medium disabled:opacity-40 active:bg-amber-50 dark:active:bg-amber-900/10"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-100 text-[14px] font-medium disabled:opacity-60 active:bg-zinc-700"
           disabled={!effectiveNative}
           onClick={handlePlay}
           type="button"
@@ -180,12 +180,12 @@ export function MobileCard(props: Props) {
         </button>
         <button
           aria-label={`Save ${spell.name} mobile`}
-          className={`inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border text-[14px] font-semibold active:scale-[0.98] transition-all disabled:opacity-40 ${
+          className={`inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border text-[14px] font-semibold active:scale-[0.98] transition-all disabled:opacity-60 ${
             saveFailed
-              ? "border-red-400 bg-red-50 text-red-800"
+              ? "border-red-400 bg-red-900/30 text-red-300"
               : justSaved
-              ? "border-emerald-400 bg-emerald-500 text-white"
-              : "border-[var(--border)] bg-black text-white dark:bg-white dark:text-black"
+              ? "border-emerald-400 bg-emerald-900/30 text-emerald-300"
+              : "border-zinc-700 bg-zinc-900 text-zinc-100"
           }`}
           disabled={saveDisabled}
           onClick={handleSave}

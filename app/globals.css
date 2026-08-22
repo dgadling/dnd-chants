@@ -3,11 +3,11 @@
 @tailwind utilities;
 
 :root {
-  --bg: #0b0b10;
-  --surface: #15151f;
-  --border: #2a2a3d;
-  --text: #e6e6ef;
-  --dim: #9aa0b3;
+  --bg: #18181b;
+  --surface: #27272a;
+  --border: #3f3f46;
+  --text: #f4f4f5;
+  --dim: #a1a1aa;
 }
 
 * { box-sizing: border-box; }
@@ -27,18 +27,18 @@ body {
 }
 
 .input {
-  background: #0f0f18;
-  border: 1px solid var(--border);
+  background: #27272a;
+  border: 1px solid #3f3f46;
   border-radius: 8px;
   padding: 8px 10px;
-  color: var(--text);
+  color: #f4f4f5;
   width: 100%;
 }
 
 .btn {
-  background: #2a2a5a;
-  border: 1px solid #3a3a7a;
-  color: var(--text);
+  background: #27272a;
+  border: 1px solid #3f3f46;
+  color: #f4f4f5;
   border-radius: 8px;
   padding: 6px 12px;
   cursor: pointer;
@@ -46,7 +46,8 @@ body {
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-ghost {
   background: transparent;
-  border: 1px solid var(--border);
+  border: 1px solid #3f3f46;
+  color: #a1a1aa;
 }
 
 .badge-jex {

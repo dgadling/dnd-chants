@@ -244,30 +244,30 @@ export default function LabPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] pb-[env(safe-area-inset-bottom)]">
+    <div className="min-h-screen bg-zinc-900 text-zinc-100 pb-[env(safe-area-inset-bottom)]">
       <main className="mx-auto max-w-6xl px-3 py-4 pb-10 md:px-4">
         {/* DDB Link Bar */}
-        <div className="card px-5 py-4 flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] mb-5">
+        <div className="px-5 py-4 flex flex-col gap-3 rounded-xl border border-zinc-700 bg-zinc-800 mb-5">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
             <div className="flex-1 min-w-0">
               {characterId ? (
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   <span className="font-semibold truncate">{characterName || `Character ${characterId}`}</span>
-                  <span className="text-[var(--dim)] text-xs">{totalVerbal} spells</span>
+                  <span className="text-zinc-400 text-xs">{totalVerbal} spells</span>
                   {lastFetchISO ? (
-                    <span className="text-xs text-[var(--dim)]" title={lastFetchISO}>
+                    <span className="text-xs text-zinc-400" title={lastFetchISO}>
                       Last fetch {formatRelative(lastFetchISO)}
                       {lastModifiedISO ? ` • sheet modified ${formatRelative(lastModifiedISO)}` : ""}
                     </span>
                   ) : null}
                 </div>
               ) : (
-                <div className="text-sm text-[var(--dim)]">No character linked – paste D&D Beyond URL to load spells</div>
+                <div className="text-sm text-zinc-400">No character linked – paste D&D Beyond URL to load spells</div>
               )}
             </div>
             <div className="flex gap-2">
               {characterId ? (
-                <button onClick={onRefreshClick} disabled={isLinking} className="btn text-xs h-8 px-3">
+                <button onClick={onRefreshClick} disabled={isLinking} className="bg-zinc-700 border border-zinc-600 text-zinc-100 rounded-lg text-xs h-8 px-3 hover:bg-zinc-600 disabled:opacity-60">
                   {isLinking ? "Refreshing…" : "Refresh"}
                 </button>
               ) : null}
@@ -276,13 +276,13 @@ export default function LabPage() {
 
           <div className="flex flex-col sm:flex-row gap-2">
             <input
-              className="input text-sm flex-1 h-10"
+              className="flex-1 h-10 rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 px-3 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
               value={linkInput}
               onChange={(e) => setLinkInput(e.target.value)}
               placeholder="https://www.dndbeyond.com/characters/12345678 or 12345678"
               onKeyDown={(e) => { if (e.key === "Enter") onLinkClick(); }}
             />
-            <button onClick={onLinkClick} disabled={isLinking} className="btn text-sm h-10 sm:w-[160px]">
+            <button onClick={onLinkClick} disabled={isLinking} className="bg-amber-400 text-black rounded-lg text-sm h-10 sm:w-[160px] font-semibold hover:bg-amber-300 disabled:opacity-60">
               {isLinking ? "Linking…" : characterId ? "Change" : "Link Character"}
             </button>
           </div>
@@ -292,7 +292,7 @@ export default function LabPage() {
         <header className="mb-5">
           <div className="min-w-0">
             <h1 className="text-xl md:text-2xl font-bold tracking-tight">D&D Chants</h1>
-            <p className="mt-1 text-[13px] md:text-sm text-[var(--dim)] max-w-[34rem] leading-snug">
+            <p className="mt-1 text-[13px] md:text-sm text-zinc-400 max-w-[34rem] leading-snug">
               <span className="md:hidden">Tap a school to reword. Link your D&D Beyond character above.</span>
               <span className="hidden md:inline">{totalVerbal ? `${totalVerbal} spells grouped by school. ` : ""}Type a new English cue, hit ▶ to translate, 🔊 to hear it, 💾 to save locally.</span>
             </p>
@@ -305,7 +305,11 @@ export default function LabPage() {
             <button
               key={s}
               onClick={() => setActiveSchool(s as School)}
-              className={`btn text-[13px] px-3 py-1.5 rounded-full ${activeSchool === s ? "" : "btn-ghost"}`}
+              className={`text-[13px] px-3 py-1.5 rounded-full border font-medium transition-colors ${
+                activeSchool === s
+                  ? "bg-amber-400 text-black border-amber-400"
+                  : "bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700"
+              }`}
             >
               {s} {grouped[s]?.length ? `· ${grouped[s].length}` : ""}
             </button>
@@ -313,29 +317,29 @@ export default function LabPage() {
         </div>
 
         {totalVerbal === 0 ? (
-          <div className="card px-6 py-12 text-center space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+          <div className="px-6 py-12 text-center space-y-3 rounded-xl border border-zinc-700 bg-zinc-800">
             <div className="text-lg font-semibold">No spells yet</div>
-            <div className="text-sm text-[var(--dim)] max-w-[420px] mx-auto">
+            <div className="text-sm text-zinc-400 max-w-[420px] mx-auto">
               Link your D&amp;D Beyond character to see your spells here. Spells are generated per-character when you link a sheet – there is no static list.
             </div>
-            <div className="text-xs text-[var(--dim)] pt-2">Paste D&amp;D Beyond URL above. Make sure sharing is enabled in D&D Beyond.</div>
+            <div className="text-xs text-zinc-500 pt-2">Paste D&amp;D Beyond URL above. Make sure sharing is enabled in D&D Beyond.</div>
           </div>
         ) : (
-          <section className="mb-5 md:mb-8 rounded-[14px] md:rounded-xl bg-[var(--surface)] border border-[var(--border)] overflow-hidden shadow-[0_1px_0_rgba(0,0,0,0.02)]">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3 px-3 py-3 md:px-4 border-b border-[var(--border)] bg-[#faf6ef] dark:bg-[#1a1a1a]">
+          <section className="mb-5 md:mb-8 rounded-[14px] md:rounded-xl bg-zinc-800 border border-zinc-700 overflow-hidden">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3 px-3 py-3 md:px-4 border-b border-zinc-700 bg-zinc-800">
               <div className="flex items-center gap-2">
                 <h2 className="text-[16px] md:text-lg font-semibold">
-                  {activeSchool} → <span className="text-[var(--dim)]">{getLangName(activeTargetLang)} ({activeTargetLang})</span>
+                  {activeSchool} → <span className="text-zinc-400">{getLangName(activeTargetLang)} ({activeTargetLang})</span>
                 </h2>
-                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-white dark:bg-black border border-[var(--border)] text-[var(--dim)]">
+                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-400">
                   {activeSpells.length}
                 </span>
               </div>
               <label className="flex items-center gap-2 text-sm w-full md:w-auto">
-                <span className="text-[var(--dim)] text-xs md:text-sm shrink-0">Language</span>
+                <span className="text-zinc-400 text-xs md:text-sm shrink-0">Language</span>
                 <select
                   aria-label={`Language for ${activeSchool}`}
-                  className="flex-1 md:flex-none rounded-lg md:rounded-md border border-[var(--border)] bg-white px-2.5 py-2.5 md:py-1.5 text-[14px] md:text-sm dark:bg-black max-w-none md:max-w-[14rem] focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="flex-1 md:flex-none rounded-lg md:rounded-md border border-zinc-700 bg-zinc-800 text-zinc-100 px-2.5 py-2.5 md:py-1.5 text-[14px] md:text-sm max-w-none md:max-w-[14rem] focus:outline-none focus:ring-2 focus:ring-amber-400"
                   value={activeTargetLang}
                   onChange={(e) => setSchoolLangs((prev) => ({ ...prev, [activeSchool]: e.target.value }))}
                 >
@@ -352,7 +356,7 @@ export default function LabPage() {
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="text-xs uppercase tracking-wide text-[var(--dim)] border-b border-[var(--border)]">
+                  <tr className="text-xs uppercase tracking-wide text-zinc-400 border-b border-zinc-700">
                     <th className="py-2 px-2 font-medium">Spell</th>
                     <th className="py-2 px-2 font-medium">Try phrasing</th>
                     <th className="py-2 px-1 font-medium">Go</th>
@@ -363,7 +367,7 @@ export default function LabPage() {
                 <tbody>
                   {activeSpells.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-sm text-[var(--dim)]">
+                      <td colSpan={5} className="py-8 text-center text-sm text-zinc-400">
                         No spells in {activeSchool}. Link a character to populate.
                       </td>
                     </tr>
@@ -391,9 +395,9 @@ export default function LabPage() {
             </div>
 
             {/* Mobile cards - identical to space */}
-            <div className="md:hidden divide-y divide-[var(--border)]">
+            <div className="md:hidden divide-y divide-zinc-700">
               {activeSpells.length === 0 ? (
-                <div className="p-8 text-center text-sm text-[var(--dim)]">No spells in {activeSchool}. Link a character to populate.</div>
+                <div className="p-8 text-center text-sm text-zinc-400">No spells in {activeSchool}. Link a character to populate.</div>
               ) : (
                 activeSpells.map((sp) => {
                   const extra = extras[sp.name];
@@ -417,7 +421,7 @@ export default function LabPage() {
           </section>
         )}
 
-        <footer className="mt-8 text-[11px] md:text-xs text-[var(--dim)] leading-relaxed px-1 md:px-0">
+        <footer className="mt-8 text-[11px] md:text-xs text-zinc-500 leading-relaxed px-1 md:px-0">
           Speech uses cached audio mem → IDB → server. Saves persist locally in browser. Language per school, not per spell.
         </footer>
       </main>

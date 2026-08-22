@@ -112,14 +112,14 @@ export function DesktopRow(props: Props) {
     : "Save locally (browser only, not server)";
 
   return (
-    <tr className="border-b border-[var(--border)] align-top">
-      <td className="py-2 px-2 text-sm font-medium text-[var(--text)] whitespace-nowrap max-w-[9rem] truncate">
+    <tr className="border-b border-zinc-700 align-top">
+      <td className="py-2 px-2 text-sm font-medium text-zinc-100 whitespace-nowrap max-w-[9rem] truncate">
         {spell.name}
       </td>
       <td className="py-2 px-2 min-w-[11rem]">
         <input
           aria-label={`Try phrasing for ${spell.name}`}
-          className="w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-amber-400"
+          className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-amber-400"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="try phrasing"
@@ -131,7 +131,7 @@ export function DesktopRow(props: Props) {
       <td className="py-2 px-1">
         <button
           aria-label={`Translate ${spell.name}`}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-amber-400 text-black text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-amber-300"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-amber-400 text-black text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed hover:bg-amber-300"
           disabled={!input.trim() || isTranslating}
           onClick={handleTranslate}
           type="button"
@@ -140,16 +140,16 @@ export function DesktopRow(props: Props) {
           {isTranslating ? "…" : "▶"}
         </button>
       </td>
-      <td className="py-2 px-2 text-sm text-[var(--text)] max-w-[16rem] min-w-[10rem]">
+      <td className="py-2 px-2 text-sm text-zinc-100 max-w-[16rem] min-w-[10rem]">
         <input
           aria-label={`Translation for ${spell.name}`}
-          className="w-full rounded-md border border-[var(--border)] bg-white dark:bg-zinc-900 px-2 py-1.5 text-[13px] text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-amber-400 placeholder:text-[var(--dim)]"
+          className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-[13px] text-zinc-100 focus:outline-none focus:ring-1 focus:ring-amber-400 placeholder:text-zinc-500"
           value={boxText}
           onChange={(e) => setBoxText(e.target.value)}
           placeholder="native [roman]"
         />
         {transError ? (
-          <div className="mt-1 text-[11px] text-red-500 truncate" title={transError}>
+          <div className="mt-1 text-[11px] text-red-400 truncate" title={transError}>
             error: {transError.slice(0, 80)}
           </div>
         ) : null}
@@ -158,7 +158,7 @@ export function DesktopRow(props: Props) {
         <div className="flex items-center gap-1 flex-nowrap">
           <button
             aria-label={`Play audio for ${spell.name}`}
-            className="inline-flex h-7 w-7 min-w-[28px] shrink-0 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+            className="inline-flex h-7 w-7 min-w-[28px] shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-sm disabled:opacity-60 disabled:cursor-not-allowed hover:bg-zinc-700"
             disabled={!effectiveNative}
             onClick={handlePlay}
             type="button"
@@ -168,12 +168,12 @@ export function DesktopRow(props: Props) {
           </button>
           <button
             aria-label={`Save ${spell.name}`}
-            className={`inline-flex h-7 w-[56px] min-w-[56px] max-w-[56px] shrink-0 items-center justify-center rounded-md border text-[11px] font-medium disabled:opacity-30 disabled:cursor-not-allowed px-0 ${
+            className={`inline-flex h-7 w-[56px] min-w-[56px] max-w-[56px] shrink-0 items-center justify-center rounded-md border text-[11px] font-medium disabled:opacity-60 disabled:cursor-not-allowed px-0 ${
               saveFailed
-                ? "border-red-400 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300"
+                ? "border-red-400 bg-red-900/30 text-red-300"
                 : justSaved
-                ? "border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
-                : "border-[var(--border)] bg-[var(--surface)] hover:bg-amber-50 dark:hover:bg-amber-900/10"
+                ? "border-emerald-400 bg-emerald-900/30 text-emerald-300"
+                : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
             }`}
             disabled={saveDisabled}
             onClick={handleSave}

@@ -1,25 +1,33 @@
-/* client IDB audio cache – mem → IDB → server → speechSynthesis fallback like Space */
+/* client IDB audio cache – mem → IDB → server → speechSynthesis fallback like Space – SSR safe */
 const DB_NAME = "dnd-chants-audio";
 const STORE = "audio";
 const DB_VERSION = 1;
 
 const memAudioCache = new Map<string, string>();
 
+function isClient(): boolean {
+  return typeof window !== "undefined";
+}
+
 function openAudioDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    if (typeof indexedDB === "undefined") {
+    if (!isClient() || typeof indexedDB === "undefined" || !("indexedDB" in window)) {
       reject(new Error("no indexedDB"));
       return;
     }
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        db.createObjectStore(STORE);
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    try {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(STORE)) {
+          db.createObjectStore(STORE);
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    } catch (e) {
+      reject(e as Error);
+    }
   });
 }
 
@@ -57,7 +65,7 @@ let currentAudio: HTMLAudioElement | null = null;
 
 export function cancelCurrentAudio(): void {
   try {
-    if (typeof window !== "undefined" && window.speechSynthesis) {
+    if (isClient() && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
   } catch {}
@@ -71,6 +79,7 @@ export function cancelCurrentAudio(): void {
 }
 
 export async function playCachedAudio(text: string, targetLang: string): Promise<void> {
+  if (!isClient()) return;
   const key = `${targetLang}|${text.toLowerCase().trim()}`;
   cancelCurrentAudio();
 
@@ -78,6 +87,7 @@ export async function playCachedAudio(text: string, targetLang: string): Promise
   const mem = memAudioCache.get(key);
   if (mem) {
     try {
+      if (typeof Audio === "undefined") throw new Error("no Audio");
       const a = new Audio(mem);
       currentAudio = a;
       await a.play();
@@ -92,6 +102,7 @@ export async function playCachedAudio(text: string, targetLang: string): Promise
   if (idb) {
     memAudioCache.set(key, idb);
     try {
+      if (typeof Audio === "undefined") throw new Error("no Audio");
       const a = new Audio(idb);
       currentAudio = a;
       await a.play();
@@ -107,9 +118,12 @@ export async function playCachedAudio(text: string, targetLang: string): Promise
     const res = await fetch(url);
     if (res.ok) {
       const blob = await res.blob();
+      // guard URL.createObjectURL
+      if (typeof URL === "undefined" || typeof URL.createObjectURL !== "function") throw new Error("no URL");
       const objectUrl = URL.createObjectURL(blob);
       // also try to cache as data URL for IDB
       try {
+        if (typeof FileReader === "undefined") throw new Error("no FileReader");
         const reader = new FileReader();
         const dataUrl = await new Promise<string>((resolve, reject) => {
           reader.onload = () => resolve(reader.result as string);
@@ -118,12 +132,14 @@ export async function playCachedAudio(text: string, targetLang: string): Promise
         });
         memAudioCache.set(key, dataUrl);
         await idbSet(key, dataUrl);
+        if (typeof Audio === "undefined") throw new Error("no Audio");
         const a = new Audio(dataUrl);
         currentAudio = a;
         await a.play();
         setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
         return;
       } catch {
+        if (typeof Audio === "undefined") throw new Error("no Audio");
         const a = new Audio(objectUrl);
         currentAudio = a;
         await a.play();
@@ -137,7 +153,7 @@ export async function playCachedAudio(text: string, targetLang: string): Promise
 
   // 4. speechSynthesis fallback
   try {
-    if (typeof window !== "undefined" && window.speechSynthesis) {
+    if (isClient() && window.speechSynthesis && typeof SpeechSynthesisUtterance !== "undefined") {
       const { getSpeechLang } = await import("./lang");
       const utter = new SpeechSynthesisUtterance(text);
       utter.lang = getSpeechLang(targetLang);
