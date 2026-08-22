@@ -57,7 +57,7 @@ function extractIdFromRequest(req: any): string|null {
   const m3=rawPath.match(/(\d{5,})/); if(m3) return m3[1]; return null;
 }
 
-export const ttsProxy = onRequest({ region:"us-central1", memory:"256MiB", timeoutSeconds:10, concurrency:80, cors:true }, async (req,res)=>{
+export const ttsProxy = onRequest({ region:"us-central1", memory:"256MiB", timeoutSeconds:10, concurrency:80, cors: ["https://chants-506202.web.app","https://chants-506202.firebaseapp.com","http://localhost:3000"] }, async (req,res)=>{
   if(req.method==="OPTIONS"){ res.status(204).send(""); return; }
   const tlRaw=(req.query?.tl as string)||(req.query?.target as string)||""; const qRaw=(req.query?.q as string)||(req.query?.text as string)||""; const ie=((req.query?.ie as string)||"UTF-8").slice(0,10);
   if(!tlRaw||!qRaw){ res.status(400).json({error:"missing tl or q"}); return; }
@@ -73,7 +73,7 @@ export const ttsProxy = onRequest({ region:"us-central1", memory:"256MiB", timeo
   }catch(e:any){ const msg=String(e?.message||e); if(msg.includes("aborted")||e?.name==="AbortError"){ res.status(504).json({error:"tts fetch timed out"}); return; } res.status(502).json({error:msg.slice(0,400)}); }finally{ clearTimeout(timer); }
 });
 
-export const dndbeyondProxy = onRequest({ region:"us-central1", memory:"256MiB", timeoutSeconds:15, concurrency:40, cors:true }, async (req,res)=>{
+export const dndbeyondProxy = onRequest({ region:"us-central1", memory:"256MiB", timeoutSeconds:15, concurrency:40, cors: ["https://chants-506202.web.app","https://chants-506202.firebaseapp.com","http://localhost:3000"] }, async (req,res)=>{
   if(req.method==="OPTIONS"){ res.status(204).send(""); return; }
   const charId=extractIdFromRequest(req); if(!charId){ res.status(400).json({error:"missing character id"}); return; }
   if(!/^\d+$/.test(charId)){ res.status(400).json({error:"invalid character id"}); return; }
@@ -94,15 +94,24 @@ const DISCORD_CLIENT_ID=defineSecret("DISCORD_CLIENT_ID");
 const DISCORD_CLIENT_SECRET=defineSecret("DISCORD_CLIENT_SECRET");
 
 function getRedirectUri(req:any): string {
-  const override=(req.query?.redirect_uri as string)||""; if(override.startsWith("https://chants-506202.web.app")) return override; if(override.startsWith("http://localhost:")) return override;
+  const override=(req.query?.redirect_uri as string)||""; if(override){
+    try{
+      const u=new URL(override);
+      if(u.hostname==="chants-506202.web.app"||u.hostname==="chants-506202.firebaseapp.com"||u.hostname==="localhost"||u.hostname==="127.0.0.1") return override;
+    }catch{}
+  }
   return "https://chants-506202.web.app/api/discord-auth/callback";
 }
 
-function buildPostMessageHtml(payload:any): string {
-  return `<!doctype html><html><body><script>(function(){var payload=${JSON.stringify(payload)};var targetOrigin=window.location.origin;var allowed=["https://chants-506202.web.app","https://chants-506202.firebaseapp.com",targetOrigin];if(window.opener){try{window.opener.postMessage(payload,targetOrigin);}catch(e){}for(var i=0;i<allowed.length;i++){try{if(allowed[i]!==targetOrigin) window.opener.postMessage(payload,allowed[i]);}catch(e){}}}document.body.innerText=payload.type==="discord-auth-error"?"Discord auth failed: "+(payload.error||"unknown")+" – you can close this window.":"Discord login successful – you can close this window.";})();</script></body></html>`;
+function safeJson(x:any): string {
+  return JSON.stringify(x).replace(/</g,'\\u003c');
 }
 
-export const discordAuthCallback = onRequest({ region:"us-central1", memory:"256MiB", timeoutSeconds:15, concurrency:40, cors:true, secrets:[DISCORD_CLIENT_ID,DISCORD_CLIENT_SECRET] }, async (req,res)=>{
+function buildPostMessageHtml(payload:any): string {
+  return `<!doctype html><html><body><script>(function(){var payload=${safeJson(payload)};var targetOrigin=window.location.origin;var allowed=["https://chants-506202.web.app","https://chants-506202.firebaseapp.com",targetOrigin];if(window.opener){try{window.opener.postMessage(payload,targetOrigin);}catch(e){}for(var i=0;i<allowed.length;i++){try{if(allowed[i]!==targetOrigin) window.opener.postMessage(payload,allowed[i]);}catch(e){}}}document.body.innerText=payload.type==="discord-auth-error"?"Discord auth failed: "+(payload.error||"unknown")+" – you can close this window.":"Discord login successful – you can close this window.";})();</script></body></html>`;
+}
+
+export const discordAuthCallback = onRequest({ region:"us-central1", memory:"256MiB", timeoutSeconds:15, concurrency:40, cors: ["https://chants-506202.web.app","https://chants-506202.firebaseapp.com","http://localhost:3000"], secrets:[DISCORD_CLIENT_ID,DISCORD_CLIENT_SECRET] }, async (req,res)=>{
   if(req.method==="OPTIONS"){ res.status(204).send(""); return; }
   const code=(req.query?.code as string)||""; const state=(req.query?.state as string)||""; const error=(req.query?.error as string)||""; const errorDesc=(req.query?.error_description as string)||"";
   if(error){ logger.warn("discord oauth error",{error,errorDesc}); const html=buildPostMessageHtml({type:"discord-auth-error",error,error_description:errorDesc,state}); res.set("Content-Type","text/html").status(200).send(html); return; }
@@ -116,12 +125,12 @@ export const discordAuthCallback = onRequest({ region:"us-central1", memory:"256
     const userRes=await fetch("https://discord.com/api/users/@me",{headers:{Authorization:`Bearer ${accessToken}`}}); if(!userRes.ok){ res.status(502).json({error:"Discord user fetch failed"}); return; }
     const discordUser:any=await userRes.json(); const discordId=String(discordUser?.id||""); const discordUsername=String(discordUser?.username||discordUser?.global_name||""); const discordAvatar=discordUser?.avatar?String(discordUser.avatar):null; if(!discordId){ res.status(502).json({error:"Discord user id missing"}); return; }
     const uid=`discord:${discordId}`; const customToken=await admin.auth().createCustomToken(uid,{discordId,discordUsername,discordAvatar}); logger.info("discord auth success",{uid,discordUsername});
-    const html=`<!doctype html><html><head><meta charset="utf-8"><title>Discord auth success</title></head><body style="font-family:system-ui;padding:20px;background:#18181b;color:#e4e4e7"><p>Discord login successful – you can close this window.</p><script>(function(){var payload={type:"discord-auth-success",customToken:${JSON.stringify(customToken)},discordUser:{id:${JSON.stringify(discordId)},username:${JSON.stringify(discordUsername)},avatar:${JSON.stringify(discordAvatar)}},state:${JSON.stringify(state)}};try{if(window.opener){var targetOrigin=window.location.origin;var allowed=["https://chants-506202.web.app","https://chants-506202.firebaseapp.com",targetOrigin];try{window.opener.postMessage(payload,targetOrigin);}catch(e){}for(var i=0;i<allowed.length;i++){try{if(allowed[i]!==targetOrigin) window.opener.postMessage(payload,allowed[i]);}catch(e){}}}try{localStorage.setItem("dnd-chant-discord-callback",JSON.stringify(payload));}catch(e){}setTimeout(function(){window.close();},500);setTimeout(function(){if(!window.opener){window.location.href="/?discord_auth=success";}},800);}catch(e){document.body.innerHTML+="<pre>"+String(e)+"</pre>";}})();</script></body></html>`;
+    const html=`<!doctype html><html><head><meta charset="utf-8"><title>Discord auth success</title></head><body style="font-family:system-ui;padding:20px;background:#18181b;color:#e4e4e7"><p>Discord login successful – you can close this window.</p><script>(function(){var payload={type:"discord-auth-success",customToken:${safeJson(customToken)},discordUser:{id:${safeJson(discordId)},username:${safeJson(discordUsername)},avatar:${safeJson(discordAvatar)}},state:${safeJson(state)}};try{if(window.opener){var targetOrigin=window.location.origin;var allowed=["https://chants-506202.web.app","https://chants-506202.firebaseapp.com",targetOrigin];try{window.opener.postMessage(payload,targetOrigin);}catch(e){}for(var i=0;i<allowed.length;i++){try{if(allowed[i]!==targetOrigin) window.opener.postMessage(payload,allowed[i]);}catch(e){}}}try{localStorage.setItem("dnd-chant-discord-callback",JSON.stringify(payload));}catch(e){}setTimeout(function(){window.close();},500);setTimeout(function(){if(!window.opener){window.location.href="/?discord_auth=success";}},800);}catch(e){document.body.innerHTML+="<pre>"+String(e)+"</pre>";}})();</script></body></html>`;
     res.set("Content-Type","text/html").status(200).send(html);
   }catch(e:any){ logger.error("discord callback exception",{err:String(e?.message||e)}); res.status(500).json({error:String(e?.message||e).slice(0,400)}); }
 });
 
-export const backup = onRequest({ region:"us-central1", memory:"256MiB", timeoutSeconds:10, concurrency:40, cors:true }, async (req,res)=>{
+export const backup = onRequest({ region:"us-central1", memory:"256MiB", timeoutSeconds:10, concurrency:40, cors: ["https://chants-506202.web.app","https://chants-506202.firebaseapp.com","http://localhost:3000"] }, async (req,res)=>{
   if(req.method==="OPTIONS"){ res.status(204).send(""); return; }
   const authHeader=(req.headers?.authorization as string)||""; const idToken=authHeader.startsWith("Bearer ")?authHeader.slice(7):""; if(!idToken){ res.status(401).json({error:"missing Authorization Bearer token"}); return; }
   let decoded:any; try{ decoded=await admin.auth().verifyIdToken(idToken); }catch(e:any){ res.status(401).json({error:"invalid or expired ID token"}); return; }
