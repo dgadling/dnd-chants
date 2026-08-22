@@ -13,9 +13,10 @@ export function useBackup(opts: { characters:any[]; schoolLangsPerChar:Record<st
   const [ui,setUi]=useState<{showEnableBackups:boolean;lastBackupISO:string|null;backupEnabled:boolean}>({showEnableBackups:false,lastBackupISO:null,backupEnabled:false});
   const [pinDialog,setPinDialog]=useState<{open:boolean;mode:"backup"|"restore";resolve?:(pin:string|null)=>void}>({open:false,mode:"backup"});
 
-  useEffect(()=>{ let unsub:(()=>void)|null=null; try{ unsub=onAuthChanged(fb=>{ if(fb){ 
+  useEffect(()=>{ let unsub:(()=>void)|null=null; try{ unsub=onAuthChanged(async fb=>{ if(fb){ 
     let restored: DiscordUser=null; try{ const raw=localStorage.getItem(STORAGE_DISCORD_USER); if(raw){ const j=JSON.parse(raw); if(j?.id) restored={id:String(j.id),username:String(j.username||""),avatar:j.avatar||null}; } }catch{}
-    setUser(p=>({firebase:fb,discord:p.discord||restored|| (fb as any).uid?.startsWith("discord:")?{id:(fb as any).uid.slice(8),username:restored?.username||"" ,avatar:restored?.avatar||null}:null })); setUi(p=>({...p,backupEnabled:true})); try{localStorage.setItem(STORAGE_BACKUP_ENABLED,"1");}catch{} } else setUser(p=>({firebase:null,discord:p.discord})); }); }catch{} return()=>{ if(unsub) unsub(); }; },[]);
+    if(!restored){ try{ const tr:any = await (fb as any).getIdTokenResult?.(); const c=tr?.claims; if(c?.discordId) restored={id:String(c.discordId),username:String(c.discordUsername||""),avatar:c.discordAvatar||null}; }catch{} }
+    setUser(p=>({firebase:fb,discord:p.discord||restored|| (fb as any).uid?.startsWith("discord:")?{id:(fb as any).uid.slice(8),username:restored?.username||"" ,avatar:restored?.avatar||null}:null })); if(restored){ try{localStorage.setItem(STORAGE_DISCORD_USER,JSON.stringify(restored));}catch{} } setUi(p=>({...p,backupEnabled:true})); try{localStorage.setItem(STORAGE_BACKUP_ENABLED,"1");}catch{} } else setUser(p=>({firebase:null,discord:p.discord})); }); }catch{} return()=>{ if(unsub) unsub(); }; },[]);
 
   useEffect(()=>{
     try{ if(localStorage.getItem(STORAGE_BACKUP_ENABLED)==="1") setUi(p=>({...p,backupEnabled:true})); const lb=localStorage.getItem(STORAGE_LAST_BACKUP); if(lb) setUi(p=>({...p,lastBackupISO:lb})); const du=localStorage.getItem(STORAGE_DISCORD_USER); if(du){ const j=JSON.parse(du); if(j?.id) setUser(p=>({firebase:p.firebase,discord:{id:String(j.id),username:String(j.username||""),avatar:j.avatar||null}})); } }catch{}
