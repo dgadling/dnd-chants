@@ -41,16 +41,17 @@ export function useBackup(opts: { characters:any[]; schoolLangsPerChar:Record<st
                   if(doRestore){
                     setStatus("Restoring existing backup…");
                     try{
-                      const data=await restoreFromCloud(uid,pending);
+                      const restored=await restoreFromCloud(uid,pending);
+                      const data=restored.data;
+                      const cloudSize=restored.size;
                       if(Array.isArray(data.characters)) localStorage.setItem("dnd-chant-characters-v1",JSON.stringify(data.characters));
                       if(data.schoolLangsPerChar) localStorage.setItem("dnd-chant-school-langs-v1",JSON.stringify(data.schoolLangsPerChar));
                       if(data.extrasPerChar) localStorage.setItem("dnd-chant-extras-v1",JSON.stringify(data.extrasPerChar));
                       if(typeof data.activeId==="string") localStorage.setItem("dnd-chant-active-character-v1",data.activeId);
                       if(typeof data.helpTemplate==="string") localStorage.setItem("dnd-chant-help-template-v1",data.helpTemplate);
                       if(data.ddbLink) try{localStorage.setItem("dnd-chant-ddb-link-v1",data.ddbLink);}catch{}
-                      const size=(()=>{ try{ return new Blob([JSON.stringify(data)]).size; }catch{ return 0; } })();
                       const now=new Date();
-                      const msg=`Restored ${size?`${formatBytes(size)} at `:""}${formatLocalTimestamp(now)}`;
+                      const msg=`Restored ${cloudSize?`${formatBytes(cloudSize)} at `:""}${formatLocalTimestamp(now)}`;
                       setUi(p=>({...p,lastCloudAction:msg,showEnableBackups:false}));
                       try{ localStorage.setItem(STORAGE_LAST_CLOUD_ACTION,msg); }catch{}
                       setStatus("Restore complete – reloading");
@@ -91,13 +92,8 @@ export function useBackup(opts: { characters:any[]; schoolLangsPerChar:Record<st
     if(action==="backup"){
       try{ const idTok=await getIdToken(); if(!idTok){ setStatus("Not signed in – enable backups first"); return; } const uid=(user.firebase as any)?.uid||""; let key:CryptoKey|null=null; try{ const b64=localStorage.getItem(STORAGE_BACKUP_KEY); if(b64) key=await importKeyFromBase64(b64);}catch{} if(!key){ const pin=await new Promise<string|null>(res=>setPinDialog({open:true,mode:"backup",resolve:res})); if(!pin||!/^\d{6}$/.test(pin)){ setStatus("Backup cancelled – invalid PIN"); setPinDialog({open:false,mode:"backup"}); return; } key=await deriveKeyFromPin(pin,uid); localStorage.setItem(STORAGE_BACKUP_KEY,await exportKeyToBase64(key)); setPinDialog({open:false,mode:"backup"}); } setStatus("Backing up…"); const payload={characters:opts.characters,schoolLangsPerChar:opts.schoolLangsPerChar,extrasPerChar:opts.extrasPerChar,activeId:opts.activeId,helpTemplate:opts.helpTemplate,ddbLink:(()=>{try{return localStorage.getItem("dnd-chant-ddb-link-v1");}catch{return null;}})()}; const res=await backupToCloud(payload,uid); const now=new Date(res.at || new Date().toISOString()); const msg=`Backed up ${res.size?`${formatBytes(res.size)} at `:""}${formatLocalTimestamp(now)}`; setUi(p=>({...p,lastBackupISO:now.toISOString(),lastBackupSize:res.size||null,lastCloudAction:msg})); try{localStorage.setItem(STORAGE_LAST_BACKUP,now.toISOString()); if(res.size) localStorage.setItem(STORAGE_LAST_BACKUP_SIZE,String(res.size)); localStorage.setItem(STORAGE_LAST_CLOUD_ACTION,msg);}catch{} setStatus("");}catch(e:any){ setStatus(`Backup failed: ${String(e?.message||e).slice(0,200)}`);} 
     } else {
-      try{ const idTok=await getIdToken(); if(!idTok){ setStatus("Not signed in – enable backups first"); return; } setStatus("Fetching backup…"); const uid=(user.firebase as any)?.uid||""; let key:CryptoKey|null=null; try{ const b64=localStorage.getItem(STORAGE_BACKUP_KEY); if(b64) key=await importKeyFromBase64(b64);}catch{} if(!key){ const pin=await new Promise<string|null>(res=>setPinDialog({open:true,mode:"restore",resolve:res})); if(!pin||!/^\d{6}$/.test(pin)){ setStatus("Restore cancelled – invalid PIN"); setPinDialog({open:false,mode:"restore"}); return; } key=await deriveKeyFromPin(pin,uid); localStorage.setItem(STORAGE_BACKUP_KEY,await exportKeyToBase64(key)); setPinDialog({open:false,mode:"restore"}); } const data=await restoreFromCloud(uid); if(Array.isArray(data.characters)) localStorage.setItem("dnd-chant-characters-v1",JSON.stringify(data.characters)); if(data.schoolLangsPerChar) localStorage.setItem("dnd-chant-school-langs-v1",JSON.stringify(data.schoolLangsPerChar)); if(data.extrasPerChar) localStorage.setItem("dnd-chant-extras-v1",JSON.stringify(data.extrasPerChar)); if(typeof data.activeId==="string") localStorage.setItem("dnd-chant-active-character-v1",data.activeId); if(typeof data.helpTemplate==="string") localStorage.setItem("dnd-chant-help-template-v1",data.helpTemplate); if(data.ddbLink) try{localStorage.setItem("dnd-chant-ddb-link-v1",data.ddbLink);}catch{} const now=new Date(); const size=(()=>{
-        try{
-          const blob=new Blob([JSON.stringify(data)]);
-          return blob.size;
-        }catch{ return 0; }
-      })();
-      const msg=`Restored ${size?`${formatBytes(size)} at `:""}${formatLocalTimestamp(now)}`;
+      try{ const idTok=await getIdToken(); if(!idTok){ setStatus("Not signed in – enable backups first"); return; } setStatus("Fetching backup…"); const uid=(user.firebase as any)?.uid||""; let key:CryptoKey|null=null; try{ const b64=localStorage.getItem(STORAGE_BACKUP_KEY); if(b64) key=await importKeyFromBase64(b64);}catch{} if(!key){ const pin=await new Promise<string|null>(res=>setPinDialog({open:true,mode:"restore",resolve:res})); if(!pin||!/^\d{6}$/.test(pin)){ setStatus("Restore cancelled – invalid PIN"); setPinDialog({open:false,mode:"restore"}); return; } key=await deriveKeyFromPin(pin,uid); localStorage.setItem(STORAGE_BACKUP_KEY,await exportKeyToBase64(key)); setPinDialog({open:false,mode:"restore"}); } const restored=await restoreFromCloud(uid); const data=restored.data; const cloudSize=restored.size; if(Array.isArray(data.characters)) localStorage.setItem("dnd-chant-characters-v1",JSON.stringify(data.characters)); if(data.schoolLangsPerChar) localStorage.setItem("dnd-chant-school-langs-v1",JSON.stringify(data.schoolLangsPerChar)); if(data.extrasPerChar) localStorage.setItem("dnd-chant-extras-v1",JSON.stringify(data.extrasPerChar)); if(typeof data.activeId==="string") localStorage.setItem("dnd-chant-active-character-v1",data.activeId); if(typeof data.helpTemplate==="string") localStorage.setItem("dnd-chant-help-template-v1",data.helpTemplate); if(data.ddbLink) try{localStorage.setItem("dnd-chant-ddb-link-v1",data.ddbLink);}catch{} const now=new Date();
+      const msg=`Restored ${cloudSize?`${formatBytes(cloudSize)} at `:""}${formatLocalTimestamp(now)}`;
       setUi(p=>({...p,lastCloudAction:msg}));
       try{ localStorage.setItem(STORAGE_LAST_CLOUD_ACTION,msg); }catch{}
       setStatus("Restore complete – reloading"); setTimeout(()=>window.location.reload(),500);}catch(e:any){ const m=String(e?.message||e); if(m.includes("Wrong PIN")) setStatus(m); else setStatus(`Restore failed: ${m.slice(0,200)}`);} 

@@ -57,9 +57,12 @@ export async function restoreFromCloud(uid: string, pin?: string) {
   if (!j?.iv || !j?.ciphertext) throw new Error("Backup empty – no iv or ciphertext, click Backup now again");
   let key: CryptoKey | null = null; try { const b64 = localStorage.getItem(STORAGE_BACKUP_KEY); if (b64) key = await importKeyFromBase64(b64); } catch {}
   if (!key) { if (!pin) throw new Error("PIN required – same 6-digit PIN you used to enable backups"); key = await deriveKeyFromPin(pin, uid); localStorage.setItem(STORAGE_BACKUP_KEY, await exportKeyToBase64(key)); }
+  const ctBytes = fromBase64(j.ciphertext) as unknown as ArrayBuffer;
+  const ctSize = (ctBytes as ArrayBuffer).byteLength;
   try {
-    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromBase64(j.iv) as unknown as BufferSource }, key, fromBase64(j.ciphertext) as unknown as BufferSource);
-    return JSON.parse(pako.inflate(new Uint8Array(plain), { to: "string" }) as any);
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromBase64(j.iv) as unknown as BufferSource }, key, ctBytes as unknown as BufferSource);
+    const parsed = JSON.parse(pako.inflate(new Uint8Array(plain), { to: "string" }) as any);
+    return { data: parsed, size: ctSize };
   } catch (e: any) { const m = String(e?.message||e); if (m.toLowerCase().includes("decrypt")||m.includes("OperationError")) throw new Error("Wrong PIN – decrypt failed, try same PIN you used on other device"); throw e; }
 }
 
