@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatBox, parseBox, getLangName } from "@/lib/lang";
 import { playCachedAudio } from "@/lib/audio";
+import { translateClient } from "@/lib/translate-client";
 
 type Spell = {
   name: string;
@@ -54,13 +55,7 @@ export function MobileCard(props: Props) {
     setIsTranslating(true);
     setTransError("");
     try {
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: trimmed, source: "en", target: targetLang }),
-      });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j?.error || res.statusText);
+      const j = await translateClient("en", targetLang, trimmed);
       const newNative = (j.translated as string || "").slice(0, 500);
       const newRoman = (j.romanized as string || "").slice(0, 500);
       const formatted = formatBox(newNative, newRoman);
