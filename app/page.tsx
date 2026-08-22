@@ -26,6 +26,17 @@ type DdbLink = {
   spells: Spell[];
 };
 
+const SCHOOL_DESCS: Record<string, string> = {
+  Abjuration: "Protecting stuff",
+  Conjuration: "Making stuff",
+  Divination: "Knowing stuff",
+  Enchantment: "Convincing stuff",
+  Evocation: "Making energy stuff",
+  Illusion: "Tricking stuff",
+  Necromancy: "Dead stuff",
+  Transmutation: "Changing stuff",
+};
+
 const STORAGE_LINK = "dnd-chant-ddb-link-v1";
 const STORAGE_EXTRAS = "dnd-chant-extras-v1";
 const STORAGE_SCHOOL_LANGS = "dnd-chant-school-langs-v1";
@@ -329,7 +340,7 @@ export default function LabPage() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3 px-3 py-3 md:px-4 border-b border-zinc-700 bg-zinc-800">
               <div className="flex items-center gap-2">
                 <h2 className="text-[16px] md:text-lg font-semibold">
-                  {activeSchool} → <span className="text-zinc-400">{getLangName(activeTargetLang)} ({activeTargetLang})</span>
+                  {activeSchool} - {SCHOOL_DESCS[activeSchool]}
                 </h2>
                 <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-400">
                   {activeSpells.length}
