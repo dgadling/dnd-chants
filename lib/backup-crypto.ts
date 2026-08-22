@@ -1,10 +1,16 @@
 export const STORAGE_BACKUP_KEY = "dnd-chant-backup-key";
 
-// Stronger PIN: PBKDF2 600k iterations OWASP, 500ms per try vs 100k 100ms, 6-digit 1M possibilities 5.7 days laptop vs 27 hours, fallback to 600k if libsodium not available
-// Note: libsodium-wrappers Argon2id 500ms memory-hard GPU resistant would be ideal but webpack ESM issue with Next.js 14, using PBKDF2 600k stronger as acceptable trade-off for D&D data not financial
-export async function deriveKeyFromPin(pin: string, salt: string): Promise<CryptoKey> {
+// Worker-offloaded PBKDF2 600k to avoid 500ms main-thread freeze
+// Fallback to direct derivation when Worker unavailable (SSR / tests)
+async function deriveDirect(pin: string, salt: string): Promise<CryptoKey> {
   const enc = new TextEncoder();
-  const km = await crypto.subtle.importKey("raw", enc.encode(pin) as unknown as BufferSource, "PBKDF2", false, ["deriveKey"]);
+  const km = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(pin) as unknown as BufferSource,
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
   return await crypto.subtle.deriveKey(
     { name: "PBKDF2", salt: enc.encode(salt) as unknown as BufferSource, iterations: 600000, hash: "SHA-256" },
     km,
@@ -12,6 +18,44 @@ export async function deriveKeyFromPin(pin: string, salt: string): Promise<Crypt
     true,
     ["encrypt", "decrypt"]
   );
+}
+
+export async function deriveKeyFromPin(pin: string, salt: string): Promise<CryptoKey> {
+  if (typeof window === "undefined" || typeof Worker === "undefined") {
+    return deriveDirect(pin, salt);
+  }
+  return new Promise((resolve, reject) => {
+    try {
+      const worker = new Worker(new URL("./workers/backup-crypto.worker.ts", import.meta.url));
+      worker.onmessage = async (e: MessageEvent<{ raw?: ArrayBuffer; error?: string }>) => {
+        if ((e.data as any)?.error) {
+          worker.terminate();
+          reject(new Error((e.data as any).error));
+          return;
+        }
+        try {
+          const raw = (e.data as any).raw as ArrayBuffer;
+          const key = await crypto.subtle.importKey("raw", raw as unknown as BufferSource, "AES-GCM", true, [
+            "encrypt",
+            "decrypt",
+          ]);
+          resolve(key);
+        } catch (err) {
+          reject(err);
+        } finally {
+          worker.terminate();
+        }
+      };
+      worker.onerror = (err) => {
+        reject(err);
+        worker.terminate();
+      };
+      worker.postMessage({ pin, salt });
+    } catch (err) {
+      // If Worker construction fails (e.g. bundler), fallback to main thread
+      deriveDirect(pin, salt).then(resolve).catch(reject);
+    }
+  });
 }
 
 export function toBase64(buf: ArrayBuffer | Uint8Array): string {
