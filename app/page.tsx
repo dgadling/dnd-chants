@@ -736,14 +736,14 @@ export default function LabPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="text-xs uppercase tracking-wide text-zinc-400 border-b border-zinc-700">
-                      <th className="py-2 px-2 font-medium">Spell</th>
-                      <th className="py-2 px-2 font-medium">Try phrasing</th>
-                      <th className="py-2 px-1 font-medium">Go</th>
-                      <th className="py-2 px-2 font-medium">Result</th>
-                      <th className="py-2 px-1 font-medium w-[88px] min-w-[88px] max-w-[88px] whitespace-nowrap text-center">Audio / Help</th>
+                      <th className="py-2 px-2 font-medium align-middle">Spell</th>
+                      <th className="py-2 px-2 font-medium align-middle">Try phrasing</th>
+                      <th className="py-2 px-1 font-medium align-middle text-center">Go</th>
+                      <th className="py-2 px-2 font-medium align-middle">Result</th>
+                      <th className="py-2 px-1 font-medium w-[88px] min-w-[88px] max-w-[88px] whitespace-nowrap text-center align-middle">Audio / Help</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="[&>tr>td]:align-middle">
                     {activeSpells.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="py-8 text-center text-sm text-zinc-400">
