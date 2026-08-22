@@ -6,6 +6,8 @@ import type { School } from "@/lib/lang";
 import { DesktopRow } from "@/components/DesktopRow";
 import { MobileCard } from "@/components/MobileCard";
 import { fetchCharacterClient, extractId as extractIdClient } from "@/lib/dndbeyond-client";
+import { EnableBackupsDialog } from "@/components/EnableBackupsDialog";
+import { useBackup } from "@/lib/useBackup";
 
 type Spell = {
   name: string;
@@ -323,10 +325,17 @@ export default function LabPage() {
     } catch {}
   }, [helpTemplate]);
 
+  // Backup hook: 4 hooks, 2 effects, 3 handlers simplified
+  const backup = useBackup({ characters, schoolLangsPerChar, extrasPerChar, activeId, helpTemplate });
+
   // Escape closes drawer/modal on mobile
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        if (backup.ui.showEnableBackups) {
+          backup.setUi(p => ({ ...p, showEnableBackups: false }));
+          return;
+        }
         if (showPrivacy) {
           setShowPrivacy(false);
           return;
@@ -639,6 +648,73 @@ export default function LabPage() {
             >
               ⚙ Configure help
             </button>
+
+            {/* Backup Section */}
+            <div className="mt-4 pt-4 border-t border-zinc-700/50">
+              <h3 className="text-[11px] uppercase tracking-widest font-semibold text-zinc-400 mb-2 px-1">Cloud Backup</h3>
+              {!backup.ui.backupEnabled ? (
+                <>
+                  <button
+                    onClick={() => backup.setUi(p => ({ ...p, showEnableBackups: true }))}
+                    className="w-full text-[12px] px-3 py-2.5 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100 transition-colors font-medium flex items-center justify-center gap-1.5"
+                  >
+                    ☁️ Enable backups
+                  </button>
+                  <div className="text-[10px] text-zinc-500 mt-1.5 px-1 leading-snug">
+                    Encrypted with 6-digit PIN. We cannot see what we are storing. It is not perfect, but it is private.
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  {backup.user.discord ? (
+                    <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-zinc-900/60 border border-zinc-700/40">
+                      <div className="h-6 w-6 rounded-full bg-indigo-500 grid place-items-center text-[11px] font-bold text-white">
+                        {backup.user.discord.username ? backup.user.discord.username.slice(0,1).toUpperCase() : "D"}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[12px] font-medium text-zinc-200 truncate">{backup.user.discord.username || `Discord ${backup.user.discord.id}`}</div>
+                        <div className="text-[10px] text-zinc-500">Backup enabled</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-zinc-400 px-1">Backup enabled</div>
+                  )}
+
+                  <button
+                    onClick={() => backup.onBackupAction("backup")}
+                    className="w-full text-[12px] px-3 py-2 rounded-lg bg-amber-400 text-black hover:bg-amber-300 font-semibold flex items-center justify-center gap-1.5"
+                  >
+                    ↑ Backup now
+                  </button>
+
+                  <button
+                    onClick={() => backup.onBackupAction("restore")}
+                    className="w-full text-[12px] px-3 py-2 rounded-lg border border-zinc-700 bg-zinc-900/40 text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100 transition-colors"
+                  >
+                    ↓ Restore
+                  </button>
+
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => backup.onDisable("delete")}
+                      className="flex-1 text-[11px] px-2 py-1.5 rounded-md bg-zinc-800 text-zinc-400 hover:text-red-300 hover:bg-zinc-700"
+                    >
+                      Delete cloud
+                    </button>
+                    <button
+                      onClick={() => backup.onDisable("disable")}
+                      className="flex-1 text-[11px] px-2 py-1.5 rounded-md bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700"
+                    >
+                      Disable
+                    </button>
+                  </div>
+
+                  {backup.ui.lastBackupISO ? <div className="text-[10px] text-zinc-500 px-1">Last backup {formatRelative(backup.ui.lastBackupISO)}</div> : null}
+                  {backup.status ? <div className="text-[10px] text-amber-200/80 px-1 break-words">{backup.status}</div> : null}
+                </div>
+              )}
+              {!backup.ui.backupEnabled && backup.status ? <div className="text-[10px] text-amber-200/80 mt-2 px-1 break-words">{backup.status}</div> : null}
+            </div>
           </div>
         </div>
 
@@ -649,6 +725,11 @@ export default function LabPage() {
           >
             Privacy Policy
           </button>
+          <div>
+            <a href="/how-we-store" className="text-[11px] text-zinc-400 hover:text-zinc-200 underline underline-offset-2">
+              How we store your data
+            </a>
+          </div>
         </div>
       </aside>
 
@@ -959,6 +1040,7 @@ export default function LabPage() {
               <p>When you translate or play audio, we send the spell text and language to Google Translate via our proxy (api/tts and translate). No personal info, just the chant text.</p>
               <p>When you click Help for idioms, we open a Google AI search with your prompt. That is Google&apos;s site, not ours.</p>
               <p>No cookies, no tracking, no analytics. If you clear your browser data, your chants go away too.</p>
+              <p>Cloud Backup is optional. If you enable it, we store an encrypted blob in Firestore keyed by your Discord id. We cannot read it without your 6-digit PIN. The PIN is 1,000,000 possibilities and can be brute forced if someone gets the database. So we cannot see what we are storing. It is not perfect, but it is private. Your PIN is stored locally per device as a derived key, not the PIN itself. You can delete the cloud backup anytime. Discord login is only for identity so only you can fetch your blob.</p>
             </div>
             <div className="flex justify-end mt-5">
               <button
@@ -971,6 +1053,26 @@ export default function LabPage() {
           </div>
         </div>
       ) : null}
+
+      
+      {backup.pinDialog?.open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={()=>backup.setPinDialog({open:false,mode:backup.pinDialog.mode})}>
+          <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 max-w-sm w-full shadow-2xl" onClick={e=>e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-zinc-100 mb-2">{backup.pinDialog.mode==="backup"?"Enter PIN for backup":"Enter PIN to decrypt"}</h3>
+            <p className="text-[12px] text-zinc-400 mb-3">6-digit PIN, same PIN you used to enable backups.</p>
+            <input id="pin-dialog-input" type="password" inputMode="numeric" maxLength={6} placeholder="123456" className="w-full h-10 rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 px-3 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-amber-400" onKeyDown={e=>{ if(e.key==="Enter"){ const el=document.getElementById("pin-dialog-input") as HTMLInputElement; const v=el?.value||""; if(/^\d{6}$/.test(v)) backup.pinDialog.resolve?.(v); } if(e.key==="Escape") backup.pinDialog.resolve?.(null); }} />
+            <div className="flex justify-between gap-2 mt-4"><button onClick={()=>backup.pinDialog.resolve?.(null)} className="bg-zinc-700 text-zinc-200 rounded-lg text-xs h-8 px-4 hover:bg-zinc-600">Cancel</button><button onClick={()=>{ const el=document.getElementById("pin-dialog-input") as HTMLInputElement; const v=el?.value||""; if(/^\d{6}$/.test(v)) backup.pinDialog.resolve?.(v); }} className="bg-amber-400 text-black rounded-lg text-xs h-8 px-4 hover:bg-amber-300 font-semibold">Confirm</button></div>
+          </div>
+        </div>
+      ) : null}
+
+      <EnableBackupsDialog
+        open={backup.ui.showEnableBackups}
+        onClose={() => { backup.setUi(p => ({ ...p, showEnableBackups: false })); }}
+        onEnable={backup.onEnableBackups}
+        isEnabling={backup.isBusy}
+        discordClientId={(() => { try { return process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || ""; } catch { return ""; } })()}
+      />
     </div>
   );
 }
