@@ -94,6 +94,84 @@ function extractIdFromRequest(req: any): string | null {
   return null;
 }
 
+export const ttsProxy = onRequest(
+  {
+    region: "us-central1",
+    memory: "256MiB",
+    timeoutSeconds: 10,
+    concurrency: 80,
+    cors: true,
+  },
+  async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
+
+    const tlRaw = (req.query?.tl as string) || (req.query?.target as string) || "";
+    const qRaw = (req.query?.q as string) || (req.query?.text as string) || "";
+    const ie = ((req.query?.ie as string) || "UTF-8").slice(0, 10);
+
+    if (!tlRaw || !qRaw) {
+      res.status(400).json({ error: "missing tl or q – use /api/tts?tl=iw&q=hello" });
+      return;
+    }
+    if (!/^[a-z-]{2,10}$/i.test(tlRaw)) {
+      res.status(400).json({ error: "invalid tl – 2-10 letters/hyphen" });
+      return;
+    }
+    const qTrim = String(qRaw).trim().slice(0, 200);
+    if (!qTrim) {
+      res.status(400).json({ error: "empty q" });
+      return;
+    }
+
+    const upstream = `https://translate.googleapis.com/translate_tts?ie=${encodeURIComponent(ie)}&tl=${encodeURIComponent(tlRaw)}&client=gtx&q=${encodeURIComponent(qTrim)}`;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      logger.info("tts proxy fetch", { tl: tlRaw, qLen: qTrim.length });
+      const upstreamRes = await fetch(upstream, {
+        method: "GET",
+        headers: {
+          "Referer": "https://translate.google.com/",
+          "User-Agent": "Mozilla/5.0 (compatible; dnd-chants-tts-proxy/1.0; +https://chants-506202.web.app)",
+        },
+        signal: controller.signal as any,
+      });
+
+      if (!upstreamRes.ok) {
+        const txt = await upstreamRes.text().catch(() => "");
+        logger.error("tts upstream error", { status: upstreamRes.status, body: txt.slice(0, 300) });
+        res.status(502).json({ error: `tts upstream ${upstreamRes.status}: ${txt.slice(0, 200)}` });
+        return;
+      }
+
+      const buf = Buffer.from(await upstreamRes.arrayBuffer());
+      res.set("Access-Control-Allow-Origin", "*");
+      res.set("Content-Type", "audio/mpeg");
+      res.set("Cache-Control", "public, max-age=86400, s-maxage=86400");
+      res.set("Content-Length", String(buf.length));
+      res.status(200).send(buf);
+    } catch (e: any) {
+      const msg = String(e?.message || e);
+      if (msg.includes("aborted") || e?.name === "AbortError") {
+        res.status(504).json({ error: "tts fetch timed out" });
+        return;
+      }
+      logger.error("tts proxy exception", { err: msg });
+      res.status(502).json({ error: msg.slice(0, 400) });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+);
+
 export const dndbeyondProxy = onRequest(
   {
     region: "us-central1",
