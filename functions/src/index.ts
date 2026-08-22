@@ -136,8 +136,8 @@ export const backup = onRequest({ region:"us-central1", memory:"256MiB", timeout
   let decoded:any; try{ decoded=await admin.auth().verifyIdToken(idToken); }catch(e:any){ res.status(401).json({error:"invalid or expired ID token"}); return; }
   const uid=String(decoded?.uid||""); if(!uid){ res.status(401).json({error:"invalid token – no uid"}); return; }
   const db=admin.firestore(); const docRef=db.collection("backups").doc(uid);
-  if(req.method==="GET"){ try{ const snap=await docRef.get(); if(!snap.exists){ res.status(404).json({exists:false}); return; } const data=snap.data(); res.status(200).json({exists:true,iv:data?.iv||null,ciphertext:data?.ciphertext||null,updatedAt:data?.updatedAt||null}); }catch(e:any){ res.status(500).json({error:"backup GET failed"}); } return; }
-  if(req.method==="PUT"){ let body:any={}; try{ body=typeof req.body==="object"?req.body:JSON.parse(req.body||"{}"); }catch{ res.status(400).json({error:"invalid JSON body"}); return; } const iv=typeof body?.iv==="string"?body.iv:""; const ciphertext=typeof body?.ciphertext==="string"?body.ciphertext:""; const updatedAt=typeof body?.updatedAt==="number"?body.updatedAt:Date.now(); if(!iv||!ciphertext){ res.status(400).json({error:"missing iv or ciphertext"}); return; }
+  if(req.method==="GET"){ try{ const snap=await docRef.get(); if(!snap.exists){ res.status(404).json({exists:false}); return; } const data=snap.data(); let ua:any=data?.updatedAt||null; try{ if(ua&&typeof ua.toMillis==="function") ua=ua.toMillis(); else if(ua&&typeof ua._seconds==="number") ua=ua._seconds*1000; }catch{} res.status(200).json({exists:true,iv:data?.iv||null,ciphertext:data?.ciphertext||null,updatedAt:ua}); }catch(e:any){ res.status(500).json({error:"backup GET failed"}); } return; }
+  if(req.method==="PUT"){ let body:any={}; try{ body=typeof req.body==="object"?req.body:JSON.parse(req.body||"{}"); }catch{ res.status(400).json({error:"invalid JSON body"}); return; } const iv=typeof body?.iv==="string"?body.iv:""; const ciphertext=typeof body?.ciphertext==="string"?body.ciphertext:""; if(!iv||!ciphertext){ res.status(400).json({error:"missing iv or ciphertext"}); return; }
     // --- validation: IV fixed length, ciphertext limit, base64 ---
     if(iv.length>50){ res.status(400).json({error:"invalid iv length"}); return; }
     if(/\s/.test(iv)){ res.status(400).json({error:"iv contains whitespace"}); return; }
@@ -149,7 +149,7 @@ export const backup = onRequest({ region:"us-central1", memory:"256MiB", timeout
     if(/\s/.test(ciphertext)){ res.status(400).json({error:"ciphertext contains whitespace"}); return; }
     if(!/^[A-Za-z0-9+/]+={0,2}$/.test(ciphertext)){ res.status(400).json({error:"ciphertext not valid base64"}); return; }
     try{ const ctBuf=Buffer.from(ciphertext,'base64'); if(ctBuf.length===0){ res.status(400).json({error:"ciphertext empty after base64 decode"}); return; } }catch{ res.status(400).json({error:"ciphertext not valid base64"}); return; }
-    try{ await docRef.set({iv,ciphertext,updatedAt},{merge:false}); res.status(200).json({ok:true,updatedAt}); }catch(e:any){ res.status(500).json({error:"backup PUT failed"}); } return; }
+    try{ await docRef.set({iv,ciphertext,updatedAt: admin.firestore.FieldValue.serverTimestamp()},{merge:false}); const nowMs=Date.now(); res.status(200).json({ok:true,updatedAt: nowMs}); }catch(e:any){ res.status(500).json({error:"backup PUT failed"}); } return; }
   if(req.method==="DELETE"){ try{ await docRef.delete(); res.status(200).json({ok:true}); }catch(e:any){ res.status(500).json({error:"backup DELETE failed"}); } return; }
   res.status(405).json({error:"method not allowed"});
 });

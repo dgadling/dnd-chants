@@ -39,13 +39,13 @@ export async function backupToCloud(payload: any, uid: string, pin?: string) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ctBuf = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv as unknown as BufferSource }, key, gz as unknown as BufferSource);
   const ct = ctBuf as ArrayBuffer;
-  const resp = await fetch("/api/backup", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` }, body: JSON.stringify({ iv: toBase64(iv), ciphertext: toBase64(ct), updatedAt: Date.now() }) });
+  const resp = await fetch("/api/backup", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` }, body: JSON.stringify({ iv: toBase64(iv), ciphertext: toBase64(ct) }) });
   let j: any; try { j = await resp.json(); } catch { throw new Error("Backup failed: server did not return JSON – check /api/backup rewrite and Hosting deploy"); }
   if (!resp.ok || !j?.ok) throw new Error(`Backup failed ${resp.status}: ${JSON.stringify(j).slice(0,200)}`);
   const now = new Date();
   localStorage.setItem(STORAGE_LAST_BACKUP, now.toISOString());
   try { localStorage.setItem(STORAGE_LAST_BACKUP_SIZE, String(ct.byteLength)); } catch {}
-  return { iv: toBase64(iv), ciphertext: toBase64(ct), updatedAt: j.updatedAt, size: ct.byteLength, at: now.toISOString() };
+  return { iv: toBase64(iv), ciphertext: toBase64(ct), updatedAt: j.updatedAt || now.getTime(), size: ct.byteLength, at: now.toISOString() };
 }
 
 export async function restoreFromCloud(uid: string, pin?: string) {
