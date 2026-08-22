@@ -553,48 +553,68 @@ export default function LabPage() {
               ) : (
                 characters.map((c) => {
                   const isActive = activeId === c.characterId || (!activeId && characters[0]?.characterId === c.characterId);
+                  const isExpanded = isActive;
+                  const fetchText = isActive ? formatRelative(lastFetchISO) : "";
+                  const modText = isActive && lastModifiedISO ? formatRelative(lastModifiedISO) : null;
                   return (
                     <div
                       key={c.characterId}
-                      className={`group flex items-center gap-1.5 px-2.5 py-2 rounded-lg border transition-colors ${
-                        isActive ? "bg-zinc-900 border-amber-400/40 text-zinc-100" : "bg-zinc-900/40 border-zinc-700/60 text-zinc-300 hover:bg-zinc-700/50 hover:border-zinc-600"
+                      className={`group flex flex-col rounded-xl border transition-colors ${
+                        isActive ? "bg-zinc-900 border-amber-400/40 text-zinc-100 p-2.5" : "bg-zinc-900/40 border-zinc-700/60 text-zinc-300 hover:bg-zinc-700/50 hover:border-zinc-600 px-2.5 py-2"
                       }`}
                     >
-                      <button
-                        className="flex-1 min-w-0 text-left flex items-center gap-1.5"
-                        onClick={() => onSwitchCharacter(c.characterId)}
-                      >
-                        <div className={`h-2 w-2 rounded-full shrink-0 ${isActive ? "bg-amber-400" : "bg-zinc-600 group-hover:bg-zinc-500"}`} />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[13px] font-medium truncate">{c.characterName || `Char ${c.characterId}`}</div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          className="flex-1 min-w-0 text-left flex items-center gap-1.5"
+                          onClick={() => onSwitchCharacter(c.characterId)}
+                        >
+                          <div className={`h-2 w-2 rounded-full shrink-0 ${isActive ? "bg-amber-400" : "bg-zinc-600 group-hover:bg-zinc-500"}`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[13px] font-medium truncate">{c.characterName || `Char ${c.characterId}`}</div>
+                          </div>
+                        </button>
+
+                        <span className="text-[10px] text-zinc-500 hidden sm:inline">·{c.spells.length}</span>
+
+                        <a
+                          href={`https://www.dndbeyond.com/characters/${c.characterId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="h-6 w-6 grid place-items-center rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 shrink-0"
+                          title="Open in D&D Beyond"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                            <polyline points="15 3 21 3 21 9" />
+                            <line x1="10" y1="14" x2="21" y2="3" />
+                          </svg>
+                        </a>
+
+                        <button
+                          className="h-6 w-6 grid place-items-center rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-red-300 text-[13px] shrink-0"
+                          onClick={(e) => { e.stopPropagation(); onRemoveCharacter(c.characterId); }}
+                          aria-label={`Delete ${c.characterName || c.characterId}`}
+                          title={`Delete ${c.characterName || c.characterId}`}
+                        >
+                          ×
+                        </button>
+                      </div>
+
+                      {isExpanded ? (
+                        <div className="mt-2 pt-2 border-t border-zinc-700/60 space-y-1">
+                          <div className="text-[11px] text-zinc-500">Last fetch {fetchText}</div>
+                          {modText ? <div className="text-[11px] text-zinc-500">Sheet modified {modText}</div> : null}
+                          <button
+                            onClick={onRefreshClick}
+                            disabled={isLinking}
+                            className="w-full mt-2 inline-flex items-center justify-center gap-1.5 bg-zinc-700 border border-zinc-600 text-zinc-100 rounded-lg text-[12px] h-8 px-3 hover:bg-zinc-600 disabled:opacity-60"
+                          >
+                            <span>↻</span>
+                            <span>{isLinking ? "Refreshing…" : "Refresh"}</span>
+                          </button>
                         </div>
-                      </button>
-
-                      <span className="text-[10px] text-zinc-500 hidden sm:inline">·{c.spells.length}</span>
-
-                      <a
-                        href={`https://www.dndbeyond.com/characters/${c.characterId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="h-6 w-6 grid place-items-center rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 shrink-0"
-                        title="Open in D&D Beyond"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                          <polyline points="15 3 21 3 21 9" />
-                          <line x1="10" y1="14" x2="21" y2="3" />
-                        </svg>
-                      </a>
-
-                      <button
-                        className="h-6 w-6 grid place-items-center rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-red-300 text-[13px] shrink-0"
-                        onClick={(e) => { e.stopPropagation(); onRemoveCharacter(c.characterId); }}
-                        aria-label={`Delete ${c.characterName || c.characterId}`}
-                        title={`Delete ${c.characterName || c.characterId}`}
-                      >
-                        ×
-                      </button>
+                      ) : null}
                     </div>
                   );
                 })
@@ -615,26 +635,6 @@ export default function LabPage() {
               ⚙ Configure help
             </button>
           </div>
-
-          {/* Active character details: Last fetch, sheet modified, Refresh */}
-          {activeCharacter ? (
-            <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/40 p-3 space-y-2.5">
-              <div className="text-[11px] uppercase tracking-widest font-semibold text-zinc-400">Active</div>
-              <div className="text-[13px] font-medium text-zinc-100 truncate">{characterName || `Character ${characterId}`}</div>
-              <div className="text-[11px] text-zinc-500 space-y-1">
-                <div>Last fetch {formatRelative(lastFetchISO)}</div>
-                {lastModifiedISO ? <div>Sheet modified {formatRelative(lastModifiedISO)}</div> : null}
-              </div>
-              <button
-                onClick={onRefreshClick}
-                disabled={isLinking}
-                className="w-full mt-1 inline-flex items-center justify-center gap-1.5 bg-zinc-700 border border-zinc-600 text-zinc-100 rounded-lg text-[12px] h-8 px-3 hover:bg-zinc-600 disabled:opacity-60"
-              >
-                <span>↻</span>
-                <span>{isLinking ? "Refreshing…" : "Refresh"}</span>
-              </button>
-            </div>
-          ) : null}
         </div>
 
         <div className="px-3 py-3 border-t border-zinc-700/70 text-[11px] text-zinc-500">
