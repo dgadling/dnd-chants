@@ -5,6 +5,7 @@ export type ThemePref = "auto" | "light" | "dark";
 export type ResolvedTheme = "light" | "dark";
 
 const STORAGE = "dnd-chant-theme-v1";
+const THEME_CHANGE_EVENT = "dnd-chant-theme-change";
 
 function getSystem(): ResolvedTheme {
   if (typeof window === "undefined") return "dark";
@@ -100,6 +101,32 @@ export function useTheme() {
     };
   }, [pref]);
 
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE && e.newValue && (e.newValue === "light" || e.newValue === "dark" || e.newValue === "auto")) {
+        const np = e.newValue as ThemePref;
+        setPrefState((prev) => (prev === np ? prev : np));
+      }
+    };
+    const onThemeChange = (e: Event) => {
+      const ce = e as CustomEvent<ThemePref>;
+      const np = ce.detail;
+      if (np && (np === "light" || np === "dark" || np === "auto")) {
+        setPrefState((prev) => (prev === np ? prev : np));
+      }
+    };
+    try {
+      window.addEventListener("storage", onStorage);
+      window.addEventListener(THEME_CHANGE_EVENT, onThemeChange as EventListener);
+    } catch {}
+    return () => {
+      try {
+        window.removeEventListener("storage", onStorage);
+        window.removeEventListener(THEME_CHANGE_EVENT, onThemeChange as EventListener);
+      } catch {}
+    };
+  }, []);
+
   const setPref = useCallback((p: ThemePref) => {
     setPrefState(p);
     try {
@@ -110,6 +137,7 @@ export function useTheme() {
     try {
       document.documentElement.setAttribute("data-theme", r);
       syncThemeColor(r);
+      window.dispatchEvent(new CustomEvent(THEME_CHANGE_EVENT, { detail: p }));
     } catch {}
   }, []);
 
