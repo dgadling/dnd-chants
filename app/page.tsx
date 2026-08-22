@@ -94,6 +94,7 @@ export default function LabPage() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState<boolean>(true);
   const [showHelpConfig, setShowHelpConfig] = useState<boolean>(false);
+  const [showPrivacy, setShowPrivacy] = useState<boolean>(false);
   const [helpTemplate, setHelpTemplate] = useState<string>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_HELP_TEMPLATE);
@@ -326,6 +327,10 @@ export default function LabPage() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        if (showPrivacy) {
+          setShowPrivacy(false);
+          return;
+        }
         if (showHelpConfig) {
           setShowHelpConfig(false);
           return;
@@ -348,7 +353,7 @@ export default function LabPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [showHelpConfig, pendingDeleteId, showAddCharacter, drawerOpen]);
+  }, [showPrivacy, showHelpConfig, pendingDeleteId, showAddCharacter, drawerOpen]);
 
   const fetchCharacterInternal = async (idOrUrl: string, opts: { silent?: boolean } = {}, existingChars?: StoredCharacter[]) => {
     const id = extractIdClient(idOrUrl);
@@ -638,10 +643,12 @@ export default function LabPage() {
         </div>
 
         <div className="px-3 py-3 border-t border-zinc-700/70 text-[11px] text-zinc-500">
-          <div className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block"></span>
-            <span>Saved locally in this browser</span>
-          </div>
+          <button
+            onClick={() => setShowPrivacy(true)}
+            className="text-[11px] text-zinc-400 hover:text-zinc-200 underline underline-offset-2"
+          >
+            Privacy Policy
+          </button>
         </div>
       </aside>
 
@@ -840,9 +847,6 @@ export default function LabPage() {
             </section>
           )}
 
-          <footer className="mt-8 text-[11px] md:text-xs text-zinc-500 leading-relaxed px-1 md:px-0 text-center">
-            Everything is saved locally
-          </footer>
         </main>
       </div>
 
@@ -921,6 +925,44 @@ export default function LabPage() {
               </button>
               <button
                 onClick={() => setShowHelpConfig(false)}
+                className="bg-amber-400 text-black rounded-lg text-xs h-8 px-4 hover:bg-amber-300 font-semibold"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showPrivacy ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={() => setShowPrivacy(false)}
+        >
+          <div
+            className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 max-w-md w-full max-h-[80vh] overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-zinc-100">Privacy Policy</h3>
+              <button
+                onClick={() => setShowPrivacy(false)}
+                className="h-7 w-7 grid place-items-center rounded-md bg-zinc-700 hover:bg-zinc-600 text-zinc-300"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-3 text-[13px] leading-relaxed text-zinc-300">
+              <p>Everything you type and your characters are stored locally in your browser (localStorage and IndexedDB). We do not have accounts or servers storing your personal stuff.</p>
+              <p>When you load a character, we fetch it from D&amp;D Beyond via our proxy (api/dndbeyond). We do not keep a copy on our servers, we just pass it through.</p>
+              <p>When you translate or play audio, we send the spell text and language to Google Translate via our proxy (api/tts and translate). No personal info, just the chant text.</p>
+              <p>When you click Help for idioms, we open a Google AI search with your prompt. That is Google&apos;s site, not ours.</p>
+              <p>No cookies, no tracking, no analytics. If you clear your browser data, your chants go away too.</p>
+            </div>
+            <div className="flex justify-end mt-5">
+              <button
+                onClick={() => setShowPrivacy(false)}
                 className="bg-amber-400 text-black rounded-lg text-xs h-8 px-4 hover:bg-amber-300 font-semibold"
               >
                 Done
