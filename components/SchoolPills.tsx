@@ -1,7 +1,6 @@
 "use client";
 import { SCHOOLS } from "@/lib/lang";
 import type { School } from "@/lib/lang";
-import { useTheme } from "@/lib/useTheme";
 
 const SCHOOL_DESCS: Record<string, string> = {
   Abjuration: "Protecting stuff",
@@ -22,9 +21,6 @@ type Props = {
 };
 
 export function SchoolPills({ grouped, activeSchool, setActiveSchool, hasChars }: Props) {
-  const theme = useTheme();
-  const isLight = theme.actual === "light";
-
   return (
     <div className="flex flex-wrap gap-2 mb-4">
       {SCHOOLS.map((s) => {
@@ -35,7 +31,7 @@ export function SchoolPills({ grouped, activeSchool, setActiveSchool, hasChars }
             <button
               key={s}
               onClick={() => setActiveSchool(s as School)}
-              className={`text-[13px] px-3 py-1.5 rounded-full border font-medium transition-colors accent-pill`}
+              className="text-[13px] px-3 py-1.5 rounded-full border font-medium transition-colors accent-pill"
               title={`${s} - ${SCHOOL_DESCS[s]} (${count} spells)`}
             >
               {count > 0 ? `${s} · ${count}` : `${s} · 0`}
@@ -47,7 +43,7 @@ export function SchoolPills({ grouped, activeSchool, setActiveSchool, hasChars }
             <button
               key={s}
               onClick={() => setActiveSchool(s as School)}
-              className={`text-[13px] px-3 py-1.5 rounded-full border font-medium transition-colors opacity-60 hover:opacity-80 ${isLight ? "bg-white text-zinc-400 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-500" : "bg-zinc-800 text-zinc-500 border-zinc-700/60 hover:bg-zinc-700 hover:text-zinc-400"}`}
+              className="text-[13px] px-3 py-1.5 rounded-full border font-medium transition-colors opacity-60 hover:opacity-80 bg-surface text-dim border-default bg-surface-hover"
               title={`${s} - ${SCHOOL_DESCS[s]} (no spells)`}
             >
               {`${s} · 0`}
@@ -58,7 +54,7 @@ export function SchoolPills({ grouped, activeSchool, setActiveSchool, hasChars }
           <button
             key={s}
             onClick={() => setActiveSchool(s as School)}
-            className={`text-[13px] px-3 py-1.5 rounded-full border font-medium transition-colors ${isLight ? "bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-50" : "bg-zinc-800 text-zinc-200 border-zinc-700 hover:bg-zinc-700"}`}
+            className="text-[13px] px-3 py-1.5 rounded-full border font-medium transition-colors bg-surface text-primary border-default bg-surface-hover"
             title={`${s} - ${SCHOOL_DESCS[s]} (${count} spells)`}
           >
             {`${s} · ${count}`}

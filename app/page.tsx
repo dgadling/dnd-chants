@@ -29,7 +29,6 @@ function extractIdForDisplay(input: string): string | null {
 
 export default function LabPage() {
   const theme = useTheme();
-  const isLight = theme.actual === "light";
   const [activeSchool, setActiveSchool] = useState<School>("Evocation");
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [showAddCharacter, setShowAddCharacter] = useState(false);
@@ -185,7 +184,7 @@ export default function LabPage() {
   }, [activeId]);
 
   return (
-    <div className={`min-h-screen antialiased flex ${isLight ? "bg-white text-zinc-900" : "bg-zinc-900 text-zinc-100"}`}>
+    <div className="min-h-screen antialiased flex bg-app text-primary">
       {drawerOpen ? <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setDrawerOpen(false)} /> : null}
 
       <Drawer
@@ -207,8 +206,8 @@ export default function LabPage() {
       />
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <div className={`lg:hidden sticky top-0 z-20 flex items-center gap-3 px-3 py-3 border-b backdrop-blur ${isLight ? "border-zinc-200 bg-white/90" : "border-zinc-800 bg-zinc-900/95"}`}>
-          <button onClick={() => setDrawerOpen(true)} className={`h-9 w-9 grid place-items-center rounded-lg ${isLight ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200" : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700"}`} aria-label="Open menu">
+        <div className="lg:hidden sticky top-0 z-20 flex items-center gap-3 px-3 py-3 border-b backdrop-blur border-default bg-surface/90">
+          <button onClick={() => setDrawerOpen(true)} className="h-9 w-9 grid place-items-center rounded-lg bg-surface bg-surface-hover text-primary" aria-label="Open menu">
             <span className="flex flex-col justify-center" style={{ width: "18px", height: "14px", gap: "3px" }}>
               <span className="block rounded-full bg-current" style={{ width: "18px", height: "2px" }}></span>
               <span className="block rounded-full bg-current" style={{ width: "18px", height: "2px" }}></span>
@@ -217,7 +216,7 @@ export default function LabPage() {
           </button>
           <div className="min-w-0 flex-1">
             <div className="font-semibold text-[15px] tracking-tight leading-none">🐉 D&D Chants</div>
-            <div className={`text-[11px] truncate mt-0.5 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
+            <div className="text-[11px] truncate mt-0.5 text-dim">
               {activeCharacter ? `${characterName || "Character"} • ${totalVerbal}` : "No character"}
             </div>
           </div>
@@ -226,7 +225,7 @@ export default function LabPage() {
         <main className="flex-1 mx-auto w-full max-w-5xl px-3 py-4 lg:px-6 lg:py-6 pb-10">
           <header className="mb-5 hidden lg:block">
             <h1 className="text-xl md:text-2xl font-bold tracking-tight">🐉 D&D Chants</h1>
-            <p className={`mt-1 text-[13px] md:text-sm max-w-[34rem] leading-snug ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>
+            <p className="mt-1 text-[13px] md:text-sm max-w-[34rem] leading-snug text-dim">
               {totalVerbal ? `${totalVerbal} spells grouped by school. ` : ""}Type a new English cue, hit ▶ to translate, 🔊 to hear it.
             </p>
           </header>
@@ -235,17 +234,17 @@ export default function LabPage() {
 
           {totalVerbal === 0 ? (
             !hasChars ? (
-              <div className={`rounded-xl border p-6 md:p-8 ${isLight ? "border-zinc-200 bg-white" : "border-zinc-700 bg-zinc-800"}`}>
+              <div className="rounded-xl border p-6 md:p-8 bg-surface border-default">
                 <h2 className="text-[18px] font-semibold tracking-tight mb-1">Get started</h2>
-                <p className={`text-[13px] mb-6 max-w-[520px] ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Link a character, pick a spell, write a cue. Everything saves locally.</p>
+                <p className="text-[13px] mb-6 max-w-[520px] text-dim">Link a character, pick a spell, write a cue. Everything saves locally.</p>
                 <div className="flex gap-2">
                   <button onClick={() => { setDrawerOpen(true); setShowAddCharacter(true); }} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-[13px] font-semibold btn-accent">+ Add Character</button>
                 </div>
               </div>
             ) : (
-              <div className={`px-6 py-12 text-center space-y-3 rounded-xl border ${isLight ? "border-zinc-200 bg-white" : "border-zinc-700 bg-zinc-800"}`}>
+              <div className="px-6 py-12 text-center space-y-3 rounded-xl border bg-surface border-default">
                 <div className="text-lg font-semibold">No spells yet</div>
-                <div className={`text-sm max-w-[420px] mx-auto ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Link your D&D Beyond character from the left drawer.</div>
+                <div className="text-sm max-w-[420px] mx-auto text-dim">Link your D&D Beyond character from the left drawer.</div>
               </div>
             )
           ) : (
@@ -265,25 +264,25 @@ export default function LabPage() {
 
       {showAddCharacter ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => { setShowAddCharacter(false); setLinkInput(""); setLinkStatus(""); }} role="dialog" aria-modal="true">
-          <div className={`border rounded-xl p-5 max-w-sm w-full shadow-2xl ${isLight ? "bg-white border-zinc-200" : "bg-zinc-800 border-zinc-700"}`} onClick={e=>e.stopPropagation()}>
-            <h3 className={`text-sm font-semibold mb-3 ${isLight ? "text-zinc-900" : "text-zinc-100"}`}>Add Character</h3>
-            <input className={`w-full h-10 rounded-lg border px-3 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus-ring-accent ${isLight ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-700 bg-zinc-900 text-zinc-100"}`} value={linkInput} onChange={(e) => setLinkInput(e.target.value)} placeholder="https://www.dndbeyond.com/characters/12345678 or 12345678" onKeyDown={(e) => { if (e.key === "Enter") onLinkClick(); }} autoFocus />
+          <div className="border rounded-xl p-5 max-w-sm w-full shadow-2xl bg-surface border-default" onClick={e=>e.stopPropagation()}>
+            <h3 className="text-sm font-semibold mb-3 text-primary">Add Character</h3>
+            <input className="w-full h-10 rounded-lg border px-3 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus-ring-accent input-field" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} placeholder="https://www.dndbeyond.com/characters/12345678 or 12345678" onKeyDown={(e) => { if (e.key === "Enter") onLinkClick(); }} autoFocus />
             <div className="flex gap-2 mt-3">
               <button onClick={onLinkClick} disabled={isLinking} className="flex-1 rounded-lg text-sm h-10 font-semibold disabled:opacity-60 btn-accent">{isLinking ? "Linking…" : characters.length ? "Add Character" : "Link Character"}</button>
-              <button onClick={() => { setShowAddCharacter(false); setLinkInput(""); setLinkStatus(""); }} className={`rounded-lg text-sm h-10 px-4 ${isLight ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200" : "bg-zinc-700 text-zinc-200 hover:bg-zinc-600"}`}>Cancel</button>
+              <button onClick={() => { setShowAddCharacter(false); setLinkInput(""); setLinkStatus(""); }} className="rounded-lg text-sm h-10 px-4 bg-surface bg-surface-hover text-dim">Cancel</button>
             </div>
-            {linkStatus ? <div className={`text-xs mt-2 ${isLight ? "text-blue-600" : "text-amber-200"}`}>{linkStatus}</div> : null}
+            {linkStatus ? <div className="text-xs mt-2 text-accent-soft">{linkStatus}</div> : null}
           </div>
         </div>
       ) : null}
 
       {pendingDeleteId ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className={`border rounded-xl p-5 max-w-sm w-full shadow-2xl ${isLight ? "bg-white border-zinc-200" : "bg-zinc-800 border-zinc-700"}`}>
+          <div className="border rounded-xl p-5 max-w-sm w-full shadow-2xl bg-surface border-default">
             <h3 className="text-sm font-semibold mb-2">Delete character?</h3>
-            <p className={`text-xs mb-4 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>This will remove {characters.find((c: any) => c.characterId === pendingDeleteId)?.characterName || pendingDeleteId} and all saved chants.</p>
+            <p className="text-xs mb-4 text-dim">This will remove {characters.find((c: any) => c.characterId === pendingDeleteId)?.characterName || pendingDeleteId} and all saved chants.</p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setPendingDeleteId(null)} className={`rounded-lg text-xs h-8 px-4 ${isLight ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200" : "bg-zinc-700 text-zinc-200 hover:bg-zinc-600"}`}>Cancel</button>
+              <button onClick={() => setPendingDeleteId(null)} className="rounded-lg text-xs h-8 px-4 bg-surface bg-surface-hover text-dim">Cancel</button>
               <button onClick={confirmRemoveCharacter} className="bg-red-600 text-white rounded-lg text-xs h-8 px-4 hover:bg-red-500 font-semibold">Delete</button>
             </div>
           </div>
@@ -292,11 +291,11 @@ export default function LabPage() {
 
       {showHelpConfig ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowHelpConfig(false)}>
-          <div className={`border rounded-xl p-5 max-w-md w-full shadow-2xl ${isLight ? "bg-white border-zinc-200" : "bg-zinc-800 border-zinc-700"}`} onClick={e=>e.stopPropagation()}>
-            <h3 className={`text-sm font-semibold mb-2 ${isLight ? "text-zinc-900" : "text-zinc-100"}`}>Configure help</h3>
-            <textarea className={`w-full min-h-[96px] rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus-ring-accent resize-y ${isLight ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-700 bg-zinc-900 text-zinc-100"}`} rows={4} value={helpTemplate} onChange={(e) => setHelpTemplate(e.target.value)} />
+          <div className="border rounded-xl p-5 max-w-md w-full shadow-2xl bg-surface border-default" onClick={e=>e.stopPropagation()}>
+            <h3 className="text-sm font-semibold mb-2 text-primary">Configure help</h3>
+            <textarea className="w-full min-h-[96px] rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus-ring-accent resize-y input-field" rows={4} value={helpTemplate} onChange={(e) => setHelpTemplate(e.target.value)} />
             <div className="flex justify-between gap-2 mt-4">
-              <button onClick={() => setHelpTemplate(DEFAULT_HELP_TEMPLATE)} className={`rounded-lg text-xs h-8 px-4 ${isLight ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200" : "bg-zinc-700 text-zinc-200 hover:bg-zinc-600"}`}>Default</button>
+              <button onClick={() => setHelpTemplate(DEFAULT_HELP_TEMPLATE)} className="rounded-lg text-xs h-8 px-4 bg-surface bg-surface-hover text-dim">Default</button>
               <button onClick={() => setShowHelpConfig(false)} className="rounded-lg text-xs h-8 px-4 font-semibold btn-accent">Done</button>
             </div>
           </div>
@@ -305,12 +304,12 @@ export default function LabPage() {
 
       {showPrivacy ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowPrivacy(false)}>
-          <div className={`border rounded-xl p-5 max-w-md w-full max-h-[80vh] overflow-y-auto shadow-2xl ${isLight ? "bg-white border-zinc-200" : "bg-zinc-800 border-zinc-700"}`} onClick={e=>e.stopPropagation()}>
+          <div className="border rounded-xl p-5 max-w-md w-full max-h-[80vh] overflow-y-auto shadow-2xl bg-surface border-default" onClick={e=>e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
-              <h3 className={`text-sm font-semibold ${isLight ? "text-zinc-900" : "text-zinc-100"}`}>Privacy Policy</h3>
-              <button onClick={() => setShowPrivacy(false)} className={`h-7 w-7 grid place-items-center rounded-md ${isLight ? "bg-zinc-100 hover:bg-zinc-200 text-zinc-600" : "bg-zinc-700 hover:bg-zinc-600 text-zinc-300"}`}>✕</button>
+              <h3 className="text-sm font-semibold text-primary">Privacy Policy</h3>
+              <button onClick={() => setShowPrivacy(false)} className="h-7 w-7 grid place-items-center rounded-md bg-surface bg-surface-hover text-dim">✕</button>
             </div>
-            <div className={`space-y-3 text-[13px] leading-relaxed ${isLight ? "text-zinc-700" : "text-zinc-300"}`}>
+            <div className="space-y-3 text-[13px] leading-relaxed text-primary">
               <p>Everything you type and your characters are stored locally in your browser. We do not have accounts or servers storing your personal stuff, unless you enable cloud backups.</p>
               <p>Cloud Backup is optional and encrypted. Nobody can read it without your PIN.</p>
             </div>
@@ -321,23 +320,23 @@ export default function LabPage() {
 
       {backup.pinDialog?.open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={()=>backup.setPinDialog({open:false,mode:backup.pinDialog.mode})}>
-          <div className={`border rounded-xl p-5 max-w-sm w-full shadow-2xl ${isLight ? "bg-white border-zinc-200" : "bg-zinc-800 border-zinc-700"}`} onClick={e=>e.stopPropagation()}>
-            <h3 className={`text-sm font-semibold mb-2 ${isLight ? "text-zinc-900" : "text-zinc-100"}`}>{backup.pinDialog.mode==="backup"?"Enter PIN for backup":"Enter PIN to decrypt"}</h3>
-            <input id="pin-dialog-input" type="password" inputMode="numeric" maxLength={6} placeholder="123456" className={`w-full h-10 rounded-lg border px-3 text-sm tracking-widest focus:outline-none focus:ring-2 focus-ring-accent ${isLight ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-700 bg-zinc-900 text-zinc-100"}`} onKeyDown={e=>{ if(e.key==="Enter"){ const el=document.getElementById("pin-dialog-input") as HTMLInputElement; const v=el?.value||""; if(/^\d{6}$/.test(v)) backup.pinDialog.resolve?.(v); } if(e.key==="Escape") backup.pinDialog.resolve?.(null); }} />
-            <div className="flex justify-between gap-2 mt-4"><button onClick={()=>backup.pinDialog.resolve?.(null)} className={`rounded-lg text-xs h-8 px-4 ${isLight ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200" : "bg-zinc-700 text-zinc-200 hover:bg-zinc-600"}`}>Cancel</button><button onClick={()=>{ const el=document.getElementById("pin-dialog-input") as HTMLInputElement; const v=el?.value||""; if(/^\d{6}$/.test(v)) backup.pinDialog.resolve?.(v); }} className="rounded-lg text-xs h-8 px-4 font-semibold btn-accent">Confirm</button></div>
+          <div className="border rounded-xl p-5 max-w-sm w-full shadow-2xl bg-surface border-default" onClick={e=>e.stopPropagation()}>
+            <h3 className="text-sm font-semibold mb-2 text-primary">{backup.pinDialog.mode==="backup"?"Enter PIN for backup":"Enter PIN to decrypt"}</h3>
+            <input id="pin-dialog-input" type="password" inputMode="numeric" maxLength={6} placeholder="123456" className="w-full h-10 rounded-lg border px-3 text-sm tracking-widest focus:outline-none focus:ring-2 focus-ring-accent input-field" onKeyDown={e=>{ if(e.key==="Enter"){ const el=document.getElementById("pin-dialog-input") as HTMLInputElement; const v=el?.value||""; if(/^\d{6}$/.test(v)) backup.pinDialog.resolve?.(v); } if(e.key==="Escape") backup.pinDialog.resolve?.(null); }} />
+            <div className="flex justify-between gap-2 mt-4"><button onClick={()=>backup.pinDialog.resolve?.(null)} className="rounded-lg text-xs h-8 px-4 bg-surface bg-surface-hover text-dim">Cancel</button><button onClick={()=>{ const el=document.getElementById("pin-dialog-input") as HTMLInputElement; const v=el?.value||""; if(/^\d{6}$/.test(v)) backup.pinDialog.resolve?.(v); }} className="rounded-lg text-xs h-8 px-4 font-semibold btn-accent">Confirm</button></div>
           </div>
         </div>
       ) : null}
 
       {showWelcome ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={closeWelcome} role="dialog" aria-modal="true">
-          <div className={`border rounded-xl p-6 max-w-md w-full shadow-2xl ${isLight ? "bg-white border-zinc-200" : "bg-zinc-800 border-zinc-700"}`} onClick={e=>e.stopPropagation()}>
+          <div className="border rounded-xl p-6 max-w-md w-full shadow-2xl bg-surface border-default" onClick={e=>e.stopPropagation()}>
             <div className="h-8 w-8 rounded-lg grid place-items-center font-bold text-[14px] mb-3 bg-accent">🐉</div>
-            <h3 className={`text-[16px] font-semibold mb-2 ${isLight ? "text-zinc-900" : "text-zinc-100"}`}>Your chants live here</h3>
-            <p className={`text-[13px] leading-relaxed mb-5 ${isLight ? "text-zinc-600" : "text-zinc-300"}`}>Everything lives in this browser. No account needed. Cloud backup is optional and encrypted with a PIN only you know.</p>
+            <h3 className="text-[16px] font-semibold mb-2 text-primary">Your chants live here</h3>
+            <p className="text-[13px] leading-relaxed mb-5 text-dim">Everything lives in this browser. No account needed. Cloud backup is optional and encrypted with a PIN only you know.</p>
             <div className="flex flex-col sm:flex-row gap-2">
               <button onClick={()=>{ closeWelcome(); setDrawerOpen(true); setShowAddCharacter(true); }} className="flex-1 rounded-lg text-[13px] h-10 px-4 font-semibold btn-accent">Add my character</button>
-              <button onClick={closeWelcome} className={`flex-1 sm:flex-none rounded-lg text-[13px] h-10 px-4 ${isLight ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200" : "bg-zinc-700 text-zinc-200 hover:bg-zinc-600"}`}>Got it</button>
+              <button onClick={closeWelcome} className="flex-1 sm:flex-none rounded-lg text-[13px] h-10 px-4 bg-surface bg-surface-hover text-dim">Got it</button>
             </div>
           </div>
         </div>

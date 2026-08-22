@@ -3,7 +3,6 @@ import { LANG_OPTIONS, getLangOptionDisplay, parseBox, formatBox } from "@/lib/l
 import type { School } from "@/lib/lang";
 import { DesktopRow } from "@/components/DesktopRow";
 import { MobileCard } from "@/components/MobileCard";
-import { useTheme } from "@/lib/useTheme";
 
 type Spell = { name: string; school: string };
 type RowExtra = { englishPhrase: string; box: string };
@@ -40,23 +39,20 @@ export function SpellSection({
   helpTemplate,
   handleSave,
 }: Props) {
-  const theme = useTheme();
-  const isLight = theme.actual === "light";
-
   return (
-    <section className={`mb-5 md:mb-8 rounded-[14px] md:rounded-xl border overflow-hidden ${isLight ? "bg-white border-zinc-200" : "bg-zinc-800 border-zinc-700"}`}>
-      <div className={`flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3 px-3 py-3 md:px-4 border-b ${isLight ? "border-zinc-200 bg-zinc-50" : "border-zinc-700 bg-zinc-800"}`}>
+    <section className="mb-5 md:mb-8 rounded-[14px] md:rounded-xl border overflow-hidden bg-surface border-default">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3 px-3 py-3 md:px-4 border-b border-default bg-surface">
         <div className="flex items-center gap-2">
           <h2 className="text-[16px] md:text-lg font-semibold">
             <span className="text-accent">{activeSchool}</span>
-            <span className={`font-normal ${isLight ? "text-zinc-600" : "text-zinc-400"}`}> - {SCHOOL_DESCS[activeSchool]}</span>
+            <span className="font-normal text-dim"> - {SCHOOL_DESCS[activeSchool]}</span>
           </h2>
-          <span className={`text-[11px] px-1.5 py-0.5 rounded-full border ${isLight ? "bg-white border-zinc-200 text-zinc-600" : "bg-zinc-900 border-zinc-700 text-zinc-400"}`}>
+          <span className="text-[11px] px-1.5 py-0.5 rounded-full border bg-surface border-default text-dim">
             {activeSpells.length}
           </span>
         </div>
         <label className="flex items-center gap-2 text-sm w-full md:w-auto">
-          <span className={`text-xs md:text-sm shrink-0 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Language</span>
+          <span className="text-xs md:text-sm shrink-0 text-dim">Language</span>
           <select
             aria-label={`Language for ${activeSchool}`}
             className="flex-1 md:flex-none rounded-lg md:rounded-md border px-2.5 py-2.5 md:py-1.5 text-[14px] md:text-sm max-w-none md:max-w-[14rem] focus:outline-none focus:ring-2 focus-ring-accent select-lang"
@@ -87,7 +83,7 @@ export function SpellSection({
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className={`text-xs uppercase tracking-wide border-b ${isLight ? "text-zinc-500 border-zinc-200 bg-zinc-50" : "text-zinc-400 border-zinc-700 bg-zinc-800"}`}>
+            <tr className="text-xs uppercase tracking-wide border-b text-dim border-default bg-surface">
               <th className="py-2 px-2 font-medium align-middle">Spell</th>
               <th className="py-2 px-2 font-medium align-middle">Try phrasing</th>
               <th className="py-2 px-1 font-medium align-middle text-center">Go</th>
@@ -98,7 +94,7 @@ export function SpellSection({
           <tbody className="[&>tr>td]:align-middle">
             {activeSpells.length === 0 ? (
               <tr>
-                <td colSpan={5} className={`py-8 text-center text-sm ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
+                <td colSpan={5} className="py-8 text-center text-sm text-dim">
                   No spells in {activeSchool}. Link a character to populate.
                 </td>
               </tr>
@@ -126,9 +122,9 @@ export function SpellSection({
         </table>
       </div>
 
-      <div className={`md:hidden divide-y ${isLight ? "divide-zinc-200" : "divide-zinc-700"}`}>
+      <div className="md:hidden divide-y divide-zinc-200 border-default">
         {activeSpells.length === 0 ? (
-          <div className={`p-8 text-center text-sm ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>No spells in {activeSchool}. Link a character to populate.</div>
+          <div className="p-8 text-center text-sm text-dim">No spells in {activeSchool}. Link a character to populate.</div>
         ) : (
           activeSpells.map((sp) => {
             const extra = activeExtras[sp.name];

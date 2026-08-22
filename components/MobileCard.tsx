@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatBox, parseBox, getLangName } from "@/lib/lang";
-import { useTheme } from "@/lib/useTheme";
 import { playCachedAudio } from "@/lib/audio";
 import { translateClient } from "@/lib/translate-client";
 
@@ -23,8 +22,6 @@ type Props = {
 };
 
 export function MobileCard(props: Props) {
-  const { actual } = useTheme();
-  const isLight = actual === "light";
   const { spell, targetLang, school, initialInput, initialNative, initialRoman, onSave, helpTemplate } = props;
   const [input, setInput] = useState(initialInput || "");
   const [boxText, setBoxText] = useState(() => formatBox(initialNative, initialRoman));
@@ -110,20 +107,20 @@ export function MobileCard(props: Props) {
   const langName = getLangName(targetLang);
 
   return (
-    <div className={`flex flex-col gap-3 p-3 border ${isLight ? "bg-white border-zinc-200" : "bg-zinc-800 border-zinc-700"}`}>
+    <div className="flex flex-col gap-3 p-3 border bg-surface border-default">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <h3 className={`text-[15px] font-semibold tracking-tight truncate ${isLight ? "text-zinc-900" : "text-zinc-100"}`}>
+          <h3 className="text-[15px] font-semibold tracking-tight truncate text-primary">
             {spell.name}
           </h3>
         </div>
       </div>
 
       <label className="flex flex-col gap-1.5">
-        <span className={`text-[11px] uppercase tracking-widest font-semibold ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>Try wording</span>
+        <span className="text-[11px] uppercase tracking-widest font-semibold text-dim">Try wording</span>
         <input
           aria-label={`Try phrasing for ${spell.name} mobile`}
-          className={`w-full rounded-xl border px-3 py-3 text-[15px] placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus-ring-accent ${isLight ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-700 bg-zinc-900 text-zinc-100"}`}
+          className="w-full rounded-xl border px-3 py-3 text-[15px] placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus-ring-accent input-field"
           value={input}
           onChange={(e) => handleInputChange(e.target.value)}
           placeholder="e.g. spying eye"
@@ -139,7 +136,7 @@ export function MobileCard(props: Props) {
 
       <button
         aria-label={`Translate ${spell.name} mobile`}
-        className={`w-full inline-flex items-center justify-center gap-2 rounded-xl text-[15px] font-semibold h-11 active:scale-[0.98] transition-transform disabled:opacity-60 disabled:active:scale-100 btn-accent`}
+        className="w-full inline-flex items-center justify-center gap-2 rounded-xl text-[15px] font-semibold h-11 active:scale-[0.98] transition-transform disabled:opacity-60 disabled:active:scale-100 btn-accent"
         disabled={!input.trim() || isTranslating}
         onClick={handleTranslate}
         type="button"
@@ -154,10 +151,10 @@ export function MobileCard(props: Props) {
       )}
 
       <label className="flex flex-col gap-1.5">
-        <span className={`text-[11px] uppercase tracking-widest font-semibold ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>Translation</span>
+        <span className="text-[11px] uppercase tracking-widest font-semibold text-dim">Translation</span>
         <input
           aria-label={`Translation for ${spell.name} mobile`}
-          className={`w-full rounded-xl border px-3 text-[15px] placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus-ring-accent ${isLight ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-700 bg-zinc-900 text-zinc-100"}`}
+          className="w-full rounded-xl border px-3 text-[15px] placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus-ring-accent input-field"
           style={{ height: "44px" }}
           value={boxText}
           onChange={(e) => handleBoxChange(e.target.value)}
@@ -168,7 +165,7 @@ export function MobileCard(props: Props) {
       <div className="grid grid-cols-2 gap-2">
         <button
           aria-label={`Play audio for ${spell.name} mobile`}
-          className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl border text-[14px] font-medium disabled:opacity-60 ${isLight ? "border-zinc-300 bg-white text-zinc-700 active:bg-zinc-50" : "border-zinc-700 bg-zinc-800 text-zinc-100 active:bg-zinc-700"}`}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border text-[14px] font-medium disabled:opacity-60 bg-surface border-default text-primary bg-surface-hover"
           disabled={!effectiveNative}
           onClick={handlePlay}
           type="button"
@@ -178,7 +175,7 @@ export function MobileCard(props: Props) {
         </button>
         <button
           aria-label={`Chant help for ${spell.name} mobile`}
-          className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl border text-[14px] font-medium ${isLight ? "border-zinc-300 bg-white text-zinc-700 active:bg-zinc-50" : "border-zinc-700 bg-zinc-800 text-zinc-100 active:bg-zinc-700"}`}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border text-[14px] font-medium bg-surface border-default text-primary bg-surface-hover"
           onClick={handleIdiom}
           type="button"
           title={`Brainstorm with Google for ${spell.name} in ${langName}`}

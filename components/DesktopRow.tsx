@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatBox, parseBox, getLangName } from "@/lib/lang";
-import { useTheme } from "@/lib/useTheme";
 import { playCachedAudio } from "@/lib/audio";
 import { translateClient } from "@/lib/translate-client";
 
@@ -23,8 +22,6 @@ type Props = {
 };
 
 export function DesktopRow(props: Props) {
-  const { actual } = useTheme();
-  const isLight = actual === "light";
   const { spell, targetLang, school, initialInput, initialNative, initialRoman, onSave, helpTemplate } = props;
   const [input, setInput] = useState(initialInput || "");
   const [boxText, setBoxText] = useState(() => formatBox(initialNative, initialRoman));
@@ -110,14 +107,14 @@ export function DesktopRow(props: Props) {
   };
 
   return (
-    <tr className={`border-b ${isLight ? "border-zinc-200" : "border-zinc-700"}`}>
-      <td className={`py-2 px-2 text-sm font-medium whitespace-nowrap max-w-[9rem] truncate align-middle ${isLight ? "text-zinc-900" : "text-zinc-100"}`}>
+    <tr className="border-b border-default">
+      <td className="py-2 px-2 text-sm font-medium whitespace-nowrap max-w-[9rem] truncate align-middle text-primary">
         {spell.name}
       </td>
       <td className="py-2 px-2 min-w-[11rem] align-middle">
         <input
           aria-label={`Try phrasing for ${spell.name}`}
-          className={`w-full h-8 rounded-md border px-2 text-sm focus:outline-none focus:ring-1 focus-ring-accent ${isLight ? "border-zinc-300 bg-white text-zinc-900 placeholder:text-zinc-400" : "border-zinc-700 bg-zinc-800 text-zinc-100"}`}
+          className="w-full h-8 rounded-md border px-2 text-sm focus:outline-none focus:ring-1 focus-ring-accent input-field"
           value={input}
           onChange={(e) => handleInputChange(e.target.value)}
           placeholder="try phrasing"
@@ -129,7 +126,7 @@ export function DesktopRow(props: Props) {
       <td className="py-2 px-1 align-middle text-center">
         <button
           aria-label={`Translate ${spell.name}`}
-          className={`inline-flex h-8 w-8 items-center justify-center rounded-md text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed align-middle btn-accent`}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed align-middle btn-accent"
           disabled={!input.trim() || isTranslating}
           onClick={handleTranslate}
           type="button"
@@ -138,10 +135,10 @@ export function DesktopRow(props: Props) {
           {isTranslating ? "…" : "▶"}
         </button>
       </td>
-      <td className={`py-2 px-2 text-sm max-w-[16rem] min-w-[10rem] align-middle ${isLight ? "text-zinc-900" : "text-zinc-100"}`}>
+      <td className="py-2 px-2 text-sm max-w-[16rem] min-w-[10rem] align-middle text-primary">
         <input
           aria-label={`Translation for ${spell.name}`}
-          className={`w-full h-8 rounded-md border px-2 text-[13px] focus:outline-none focus:ring-1 focus-ring-accent placeholder:text-zinc-500 ${isLight ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-700 bg-zinc-800 text-zinc-100"}`}
+          className="w-full h-8 rounded-md border px-2 text-[13px] focus:outline-none focus:ring-1 focus-ring-accent placeholder:text-zinc-500 input-field"
           value={boxText}
           onChange={(e) => handleBoxChange(e.target.value)}
           placeholder="native [roman]"
@@ -156,7 +153,7 @@ export function DesktopRow(props: Props) {
         <div className="flex justify-center items-center gap-1 flex-nowrap align-middle">
           <button
             aria-label={`Play audio for ${spell.name}`}
-            className={`inline-flex h-8 w-8 min-w-[32px] shrink-0 items-center justify-center rounded-md border text-sm disabled:opacity-60 disabled:cursor-not-allowed align-middle ${isLight ? "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50" : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700"}`}
+            className="inline-flex h-8 w-8 min-w-[32px] shrink-0 items-center justify-center rounded-md border text-sm disabled:opacity-60 disabled:cursor-not-allowed align-middle bg-surface border-default text-primary bg-surface-hover"
             disabled={!effectiveNative}
             onClick={handlePlay}
             type="button"
@@ -166,7 +163,7 @@ export function DesktopRow(props: Props) {
           </button>
           <button
             aria-label={`Chant help for ${spell.name}`}
-            className={`inline-flex h-8 w-8 min-w-[32px] shrink-0 items-center justify-center rounded-md border text-sm align-middle ${isLight ? "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50" : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700"}`}
+            className="inline-flex h-8 w-8 min-w-[32px] shrink-0 items-center justify-center rounded-md border text-sm align-middle bg-surface border-default text-primary bg-surface-hover"
             onClick={handleIdiom}
             type="button"
             title={`Brainstorm with Google for ${spell.name} in ${getLangName(targetLang)}`}

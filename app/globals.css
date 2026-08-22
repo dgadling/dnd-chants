@@ -5,9 +5,12 @@
 :root {
   --bg: #18181b;
   --surface: #27272a;
+  --surface-hover: #3f3f46;
   --border: #3f3f46;
   --text: #f4f4f5;
+  --text-dim: #a1a1aa;
   --dim: #a1a1aa;
+  --input-bg: #18181b;
   --accent: #fbbf24;
   --accent-hover: #f59e0b;
   --accent-text: #000000;
@@ -19,15 +22,31 @@
 [data-theme="light"] {
   --bg: #fafaf9;
   --surface: #ffffff;
+  --surface-hover: #f4f4f5;
   --border: #e4e4e7;
   --text: #18181b;
+  --text-dim: #71717a;
   --dim: #71717a;
+  --input-bg: #ffffff;
   --accent: #0ea5e9;
   --accent-hover: #0284c7;
   --accent-text: #ffffff;
   --accent-soft: #f0f9ff;
   --accent-soft-border: rgba(14, 165, 233, 0.3);
   --accent-soft-text: #2563eb;
+}
+
+/* Efficiency utilities – zero isLight ternaries */
+.bg-surface { background: var(--surface); }
+.bg-app { background: var(--bg); }
+.bg-surface-hover:hover { background: var(--surface-hover); }
+.text-primary { color: var(--text); }
+.text-dim { color: var(--text-dim); }
+.border-default { border-color: var(--border); }
+.input-field {
+  background: var(--input-bg);
+  color: var(--text);
+  border-color: var(--border);
 }
 
 /* Theme-aware accent utilities – replaces all isLight ternaries for accent */
