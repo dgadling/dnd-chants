@@ -49,6 +49,9 @@ const STORAGE_CHARACTERS = "dnd-chant-characters-v1";
 const STORAGE_ACTIVE = "dnd-chant-active-character-v1";
 const STORAGE_EXTRAS = "dnd-chant-extras-v1";
 const STORAGE_SCHOOL_LANGS = "dnd-chant-school-langs-v1";
+const STORAGE_HELP_TEMPLATE = "dnd-chant-help-template-v1";
+const DEFAULT_HELP_TEMPLATE =
+  "Help me come up with a short chant or idiom for the Dungeons & Dragons spell {spell} in {language} that would sound reasonable to a native speaker.";
 const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
 
 function formatRelative(iso: string | null | undefined): string {
@@ -90,6 +93,14 @@ export default function LabPage() {
   const [showAddCharacter, setShowAddCharacter] = useState<boolean>(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState<boolean>(true);
+  const [showHelpConfig, setShowHelpConfig] = useState<boolean>(false);
+  const [helpTemplate, setHelpTemplate] = useState<string>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_HELP_TEMPLATE);
+      if (raw && typeof raw === "string" && raw.trim()) return raw;
+    } catch {}
+    return DEFAULT_HELP_TEMPLATE;
+  });
 
   const [activeSchool, setActiveSchool] = useState<School>("Evocation");
 
@@ -266,6 +277,14 @@ export default function LabPage() {
           }
         } catch {}
       }
+
+      // help template load (also lazy init covers first render)
+      try {
+        const rawHelp = localStorage.getItem(STORAGE_HELP_TEMPLATE);
+        if (rawHelp && typeof rawHelp === "string" && rawHelp.trim()) {
+          setHelpTemplate(rawHelp);
+        }
+      } catch {}
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -295,10 +314,22 @@ export default function LabPage() {
     } catch {}
   }, [schoolLangsPerChar]);
 
+  useEffect(() => {
+    try {
+      if (helpTemplate && helpTemplate.trim()) {
+        localStorage.setItem(STORAGE_HELP_TEMPLATE, helpTemplate);
+      }
+    } catch {}
+  }, [helpTemplate]);
+
   // Escape closes drawer/modal on mobile
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        if (showHelpConfig) {
+          setShowHelpConfig(false);
+          return;
+        }
         if (pendingDeleteId) {
           setPendingDeleteId(null);
           return;
@@ -317,7 +348,7 @@ export default function LabPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [pendingDeleteId, showAddCharacter, drawerOpen]);
+  }, [showHelpConfig, pendingDeleteId, showAddCharacter, drawerOpen]);
 
   const fetchCharacterInternal = async (idOrUrl: string, opts: { silent?: boolean } = {}, existingChars?: StoredCharacter[]) => {
     const id = extractIdClient(idOrUrl);
@@ -576,6 +607,13 @@ export default function LabPage() {
             >
               <span className="text-[14px]">+</span> Add Character
             </button>
+
+            <button
+              onClick={() => setShowHelpConfig(true)}
+              className="mt-2 w-full text-[12px] px-3 py-2 rounded-lg border border-zinc-700 bg-zinc-900/40 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50 hover:border-zinc-600 transition-colors font-medium flex items-center justify-center gap-1.5"
+            >
+              ⚙ Configure help
+            </button>
           </div>
 
           {/* Active character details: Last fetch, sheet modified, Refresh */}
@@ -765,6 +803,7 @@ export default function LabPage() {
                             initialNative={parsed.native}
                             initialRoman={parsed.roman}
                             onSave={(en, nat, rom) => handleSave(sp.name, en, nat, rom)}
+                            helpTemplate={helpTemplate}
                           />
                         );
                       })
@@ -792,6 +831,7 @@ export default function LabPage() {
                         initialNative={parsed.native}
                         initialRoman={parsed.roman}
                         onSave={(en, nat, rom) => handleSave(sp.name, en, nat, rom)}
+                        helpTemplate={helpTemplate}
                       />
                     );
                   })
@@ -846,6 +886,44 @@ export default function LabPage() {
               </button>
               <button onClick={confirmRemoveCharacter} className="bg-red-600 text-white rounded-lg text-xs h-8 px-4 hover:bg-red-500 font-semibold">
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showHelpConfig ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={() => setShowHelpConfig(false)}
+        >
+          <div
+            className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 max-w-md w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-semibold text-zinc-100 mb-2">Configure help</h3>
+            <p className="text-xs text-zinc-400 mb-3 leading-relaxed">
+              This template is used when you click the Help button 💬. Use {"{spell}"} and {"{language}"} as placeholders. They will be replaced with the spell name and language. {"{school}"} is also available.
+            </p>
+            <textarea
+              className="w-full min-h-[96px] rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-y"
+              rows={4}
+              value={helpTemplate}
+              onChange={(e) => setHelpTemplate(e.target.value)}
+              placeholder={DEFAULT_HELP_TEMPLATE}
+            />
+            <div className="flex justify-between gap-2 mt-4">
+              <button
+                onClick={() => setHelpTemplate(DEFAULT_HELP_TEMPLATE)}
+                className="bg-zinc-700 text-zinc-200 rounded-lg text-xs h-8 px-4 hover:bg-zinc-600"
+              >
+                Default
+              </button>
+              <button
+                onClick={() => setShowHelpConfig(false)}
+                className="bg-amber-400 text-black rounded-lg text-xs h-8 px-4 hover:bg-amber-300 font-semibold"
+              >
+                Done
               </button>
             </div>
           </div>

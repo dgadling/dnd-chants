@@ -18,10 +18,11 @@ type Props = {
   initialNative: string;
   initialRoman: string;
   onSave?: (englishPhrase: string, native: string, roman: string) => void;
+  helpTemplate?: string;
 };
 
 export function MobileCard(props: Props) {
-  const { spell, targetLang, school, initialInput, initialNative, initialRoman, onSave } = props;
+  const { spell, targetLang, school, initialInput, initialNative, initialRoman, onSave, helpTemplate } = props;
   const [input, setInput] = useState(initialInput || "");
   const [boxText, setBoxText] = useState(() => formatBox(initialNative, initialRoman));
   const [isTranslating, setIsTranslating] = useState(false);
@@ -92,11 +93,16 @@ export function MobileCard(props: Props) {
     void playCachedAudio(toSpeak, targetLang);
   }, [effectiveNative, targetLang]);
 
-  const handleIdiom = useCallback(() => {
+  const DEFAULT_TMPL = "Help me come up with a short chant or idiom for the Dungeons & Dragons spell {spell} in {language} that would sound reasonable to a native speaker.";
+  const handleIdiom = () => {
     const langName = getLangName(targetLang);
-    const q = `Help me come up with a short chant or idiom for the Dungeons & Dragons spell ${spell.name} in ${langName} that would sound reasonable to a native speaker.`;
+    const raw = helpTemplate && helpTemplate.trim() ? helpTemplate : DEFAULT_TMPL;
+    const hasPlace = raw.includes("{spell}") || raw.includes("{language}") || raw.includes("{school}");
+    const q = hasPlace
+      ? raw.replaceAll("{spell}", spell.name).replaceAll("{language}", langName).replaceAll("{school}", school)
+      : raw;
     window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, "_blank", "popup,width=900,height=700");
-  }, [spell.name, targetLang]);
+  };
 
   const langName = getLangName(targetLang);
 
