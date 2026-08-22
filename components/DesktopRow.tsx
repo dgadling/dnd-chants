@@ -144,10 +144,10 @@ export function DesktopRow(props: Props) {
         ) : null}
       </td>
       <td className="py-2 px-1 w-[88px] min-w-[88px] max-w-[88px] whitespace-nowrap">
-        <div className="flex items-center gap-1 flex-nowrap">
+        <div className="flex justify-center items-center gap-1 flex-nowrap">
           <button
             aria-label={`Play audio for ${spell.name}`}
-            className="inline-flex h-7 w-7 min-w-[28px] shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-sm disabled:opacity-60 disabled:cursor-not-allowed hover:bg-zinc-700"
+            className="inline-flex h-8 w-8 min-w-[32px] shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-sm disabled:opacity-60 disabled:cursor-not-allowed hover:bg-zinc-700"
             disabled={!effectiveNative}
             onClick={handlePlay}
             type="button"
@@ -157,7 +157,7 @@ export function DesktopRow(props: Props) {
           </button>
           <button
             aria-label={`Chant help for ${spell.name}`}
-            className="inline-flex h-7 w-7 min-w-[28px] shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-sm hover:bg-zinc-700"
+            className="inline-flex h-8 w-8 min-w-[32px] shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-sm hover:bg-zinc-700"
             onClick={handleIdiom}
             type="button"
             title={`Help for ${spell.name} in ${getLangName(targetLang)}`}
