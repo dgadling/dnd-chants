@@ -158,16 +158,6 @@ export function MobileCard(props: Props) {
 
       <div className="grid grid-cols-2 gap-2">
         <button
-          aria-label={`Chant help for ${spell.name} mobile`}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-100 text-[14px] font-medium active:bg-zinc-700"
-          onClick={handleIdiom}
-          type="button"
-          title={`Help for ${spell.name} in ${langName}`}
-        >
-          <span>💬</span>
-          <span>Idiom</span>
-        </button>
-        <button
           aria-label={`Play audio for ${spell.name} mobile`}
           className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-100 text-[14px] font-medium disabled:opacity-60 active:bg-zinc-700"
           disabled={!effectiveNative}
@@ -176,6 +166,16 @@ export function MobileCard(props: Props) {
         >
           <span>🔊</span>
           <span>Listen</span>
+        </button>
+        <button
+          aria-label={`Chant help for ${spell.name} mobile`}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-100 text-[14px] font-medium active:bg-zinc-700"
+          onClick={handleIdiom}
+          type="button"
+          title={`Help for ${spell.name} in ${langName}`}
+        >
+          <span>💬</span>
+          <span>Idiom</span>
         </button>
       </div>
     </div>
