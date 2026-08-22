@@ -6,43 +6,113 @@ on:
   workflow_dispatch:
 
 jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      hosting: ${{ steps.filter.outputs.hosting }}
+      functions: ${{ steps.filter.outputs.functions }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            hosting:
+              - 'app/**'
+              - 'components/**'
+              - 'lib/**'
+              - 'public/**'
+              - 'next.config.js'
+              - 'package.json'
+              - 'bun.lockb'
+              - 'tsconfig.json'
+            functions:
+              - 'functions/**'
+              - 'firebase.json'
+
   ci:
+    needs: detect
+    if: needs.detect.outputs.hosting == 'true'
     uses: ./.github/workflows/ci.yml
 
   deploy:
-    needs: ci
+    needs: [detect, ci]
+    if: always() && (needs.detect.outputs.hosting == 'true' || needs.detect.outputs.functions == 'true') && (needs.ci.result == 'success' || needs.ci.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      # --- hosting cache & build ---
+      - name: Cache bun
+        if: needs.detect.outputs.hosting == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ hashFiles('bun.lockb', 'package.json') }}
+          restore-keys: |
+            bun-
+
+      - name: Cache Next.js
+        if: needs.detect.outputs.hosting == 'true'
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: nextjs-${{ hashFiles('bun.lockb', 'package.json') }}-${{ hashFiles('app/**', 'components/**', 'lib/**') }}
+          restore-keys: |
+            nextjs-${{ hashFiles('bun.lockb', 'package.json') }}-
+            nextjs-
 
       - uses: oven-sh/setup-bun@v2
+        if: needs.detect.outputs.hosting == 'true'
         with:
           bun-version: latest
 
-      - run: bun install --frozen-lockfile
+      - name: Install
+        if: needs.detect.outputs.hosting == 'true'
+        run: bun install --frozen-lockfile
 
-      - run: bun run build
+      - name: Build
+        if: needs.detect.outputs.hosting == 'true'
+        run: bun run build
+
+      # --- functions cache & build ---
+      - name: Cache functions node_modules
+        if: needs.detect.outputs.functions == 'true'
+        uses: actions/cache@v4
+        with:
+          path: functions/node_modules
+          key: functions-${{ hashFiles('functions/package-lock.json', 'functions/package.json') }}
+          restore-keys: |
+            functions-
 
       - name: Install functions deps
+        if: needs.detect.outputs.functions == 'true'
         run: |
           cd functions
           npm install --no-audit --no-fund
 
       - name: Build functions
+        if: needs.detect.outputs.functions == 'true'
         run: |
           cd functions
           npm run build
 
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+      # --- deploy hosting only ---
+      - name: Deploy Hosting only
+        if: needs.detect.outputs.hosting == 'true' && needs.detect.outputs.functions == 'false'
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.GCP_SA_KEY }}
           channelId: live
           projectId: chants-506202
 
-      - name: Deploy Firebase Functions (dndbeyondProxy)
+      # --- deploy functions only ---
+      - name: Deploy Functions only
+        if: needs.detect.outputs.hosting == 'false' && needs.detect.outputs.functions == 'true'
         env:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
         run: |
@@ -50,3 +120,23 @@ jobs:
           gcloud auth activate-service-account --key-file=/tmp/sa.json --project=chants-506202 2>&1 | head -n 5 || true
           npx --yes firebase-tools@latest deploy --only functions --project chants-506202 --force
           rm -f /tmp/sa.json
+
+      # --- deploy both: functions first then hosting ---
+      - name: Deploy Functions (both changed)
+        if: needs.detect.outputs.hosting == 'true' && needs.detect.outputs.functions == 'true'
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
+        run: |
+          printf '%s' '${{ secrets.GCP_SA_KEY }}' > /tmp/sa.json
+          gcloud auth activate-service-account --key-file=/tmp/sa.json --project=chants-506202 2>&1 | head -n 5 || true
+          npx --yes firebase-tools@latest deploy --only functions --project chants-506202 --force
+          rm -f /tmp/sa.json
+
+      - name: Deploy Hosting (both changed)
+        if: needs.detect.outputs.hosting == 'true' && needs.detect.outputs.functions == 'true'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.GCP_SA_KEY }}
+          channelId: live
+          projectId: chants-506202

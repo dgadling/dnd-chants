@@ -10,7 +10,24 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      - name: Cache bun
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ hashFiles('bun.lockb', 'package.json') }}
+          restore-keys: |
+            bun-
+
+      - name: Cache Next.js
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: nextjs-${{ hashFiles('bun.lockb', 'package.json') }}-${{ hashFiles('app/**', 'components/**', 'lib/**') }}
+          restore-keys: |
+            nextjs-${{ hashFiles('bun.lockb', 'package.json') }}-
+            nextjs-
 
       - uses: oven-sh/setup-bun@v2
         with:
