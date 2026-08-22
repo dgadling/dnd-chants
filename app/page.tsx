@@ -432,8 +432,8 @@ export default function LabPage() {
           </section>
         )}
 
-        <footer className="mt-8 text-[11px] md:text-xs text-zinc-500 leading-relaxed px-1 md:px-0">
-          Speech uses cached audio mem → IDB → server. Saves persist locally in browser. Language per school, not per spell.
+        <footer className="mt-8 text-[11px] md:text-xs text-zinc-500 leading-relaxed px-1 md:px-0 text-center">
+          Everything is saved locally
         </footer>
       </main>
     </div>
