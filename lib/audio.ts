@@ -80,10 +80,14 @@ export function cancelCurrentAudio(): void {
 
 export async function playCachedAudio(text: string, targetLang: string): Promise<void> {
   if (!isClient()) return;
-  const key = `${targetLang}|${text.toLowerCase().trim()}`;
+  const trimmed = text.trim().slice(0, 200);
+  if (!trimmed) return;
+  const { getGoogleTl, getSpeechLang } = await import("./lang");
+  const effectiveTl = getGoogleTl(targetLang) || targetLang;
+  const key = `${effectiveTl}|${trimmed.toLowerCase()}`;
   cancelCurrentAudio();
 
-  // 1. mem cache
+  // 1. mem cache (dataURL)
   const mem = memAudioCache.get(key);
   if (mem) {
     try {
@@ -112,50 +116,72 @@ export async function playCachedAudio(text: string, targetLang: string): Promise
     }
   }
 
-  // 3. server /api/tts
+  // 3. direct Google translate_tts fetch (static, no /api/tts server)
   try {
-    const url = `/api/tts?text=${encodeURIComponent(text)}&target=${encodeURIComponent(targetLang)}`;
-    const res = await fetch(url);
+    const q = encodeURIComponent(trimmed);
+    const url = `https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(effectiveTl)}&client=gtx&q=${q}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: "GET",
+        headers: { "Referer": "https://translate.google.com/" } as any,
+        signal: controller.signal as any,
+        // @ts-ignore - referrer for static fetch
+        referrer: "https://translate.google.com/",
+      });
+    } finally {
+      clearTimeout(timer);
+    }
     if (res.ok) {
       const blob = await res.blob();
-      // guard URL.createObjectURL
-      if (typeof URL === "undefined" || typeof URL.createObjectURL !== "function") throw new Error("no URL");
-      const objectUrl = URL.createObjectURL(blob);
-      // also try to cache as data URL for IDB
-      try {
-        if (typeof FileReader === "undefined") throw new Error("no FileReader");
-        const reader = new FileReader();
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(reader.error);
-          reader.readAsDataURL(blob);
-        });
-        memAudioCache.set(key, dataUrl);
-        await idbSet(key, dataUrl);
-        if (typeof Audio === "undefined") throw new Error("no Audio");
-        const a = new Audio(dataUrl);
-        currentAudio = a;
-        await a.play();
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
-        return;
-      } catch {
-        if (typeof Audio === "undefined") throw new Error("no Audio");
-        const a = new Audio(objectUrl);
-        currentAudio = a;
-        await a.play();
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
-        return;
+      if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
+        const objectUrl = URL.createObjectURL(blob);
+        try {
+          if (typeof FileReader !== "undefined") {
+            const reader = new FileReader();
+            const dataUrl = await new Promise<string>((resolve, reject) => {
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = () => reject(reader.error);
+              reader.readAsDataURL(blob);
+            });
+            memAudioCache.set(key, dataUrl);
+            await idbSet(key, dataUrl);
+            if (typeof Audio !== "undefined") {
+              const a = new Audio(dataUrl);
+              currentAudio = a;
+              await a.play();
+              setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+              return;
+            }
+          }
+          if (typeof Audio !== "undefined") {
+            const a = new Audio(objectUrl);
+            currentAudio = a;
+            await a.play();
+            setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+            return;
+          }
+        } catch {
+          if (typeof Audio !== "undefined") {
+            const a = new Audio(objectUrl);
+            currentAudio = a;
+            await a.play().catch(()=>{});
+            setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+            return;
+          }
+        }
       }
     }
   } catch {
     // fall through to speechSynthesis
   }
 
-  // 4. speechSynthesis fallback
+  // 4. speechSynthesis fallback (client-only, no network)
   try {
     if (isClient() && window.speechSynthesis && typeof SpeechSynthesisUtterance !== "undefined") {
-      const { getSpeechLang } = await import("./lang");
-      const utter = new SpeechSynthesisUtterance(text);
+      const utter = new SpeechSynthesisUtterance(trimmed);
       utter.lang = getSpeechLang(targetLang);
       window.speechSynthesis.speak(utter);
       return;
