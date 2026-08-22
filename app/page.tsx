@@ -441,7 +441,7 @@ export default function LabPage() {
       <main className="mx-auto max-w-6xl px-3 py-4 pb-10 md:px-4">
         {/* Multi-character DDB Link Bar */}
         <div className="px-5 py-4 flex flex-col gap-3 rounded-xl border border-zinc-700 bg-zinc-800 mb-5">
-          {characters.length > 0 ? (
+          {characters.length > 0 ? ( // pills row
             <div className="flex flex-wrap gap-2">
               {characters.map((c) => (
                 <div key={c.characterId} className="flex items-center gap-0">
