@@ -51,12 +51,21 @@ function normalizeSchool(raw: any): string {
   return "Evocation";
 }
 
+function hasVerbal(defn: any): boolean {
+  const comps = defn.components;
+  if (Array.isArray(comps)) return comps.includes(1);
+  const desc = defn.componentsDescription;
+  if (typeof desc === "string") return desc.includes("V");
+  return true; // unknown -> keep
+}
+
 function collectSpells(char: any): DdbSpellEntry[] {
   const seen = new Set<string>();
   const out: DdbSpellEntry[] = [];
 
   const add = (defn: any) => {
     if (!defn) return;
+    if (!hasVerbal(defn)) return;
     const name = (defn.name || "").toString().trim();
     if (!name) return;
     if (seen.has(name.toLowerCase())) return;
