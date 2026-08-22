@@ -1,4 +1,4 @@
-/* client IDB audio cache – mem → IDB → server → speechSynthesis fallback like Space – SSR safe */
+/* client IDB audio cache – mem → IDB → proxy /api/tts → direct gtx → speechSynthesis fallback – SSR safe */
 const DB_NAME = "dnd-chants-audio";
 const STORE = "audio";
 const DB_VERSION = 1;
@@ -78,6 +78,61 @@ export function cancelCurrentAudio(): void {
   }
 }
 
+async function tryProxyTts(tl: string, q: string): Promise<Blob | null> {
+  if (!isClient()) return null;
+  const url = `/api/tts?tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(q)}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { Accept: "audio/mpeg" },
+      signal: controller.signal as any,
+    });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    if (!blob || blob.size === 0) return null;
+    return blob;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function tryDirectTts(tl: string, q: string): Promise<Blob | null> {
+  if (!isClient()) return null;
+  const url = `https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(tl)}&client=gtx&q=${encodeURIComponent(q)}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { Referer: "https://translate.google.com/" } as any,
+      signal: controller.signal as any,
+      // @ts-ignore - referrer for static fetch
+      referrer: "https://translate.google.com/",
+    });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    if (!blob || blob.size === 0) return null;
+    return blob;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
 export async function playCachedAudio(text: string, targetLang: string): Promise<void> {
   if (!isClient()) return;
   const trimmed = text.trim().slice(0, 200);
@@ -116,69 +171,97 @@ export async function playCachedAudio(text: string, targetLang: string): Promise
     }
   }
 
-  // 3. direct Google translate_tts fetch (static, no /api/tts server)
+  // 3. proxy /api/tts (same-origin, CORS-safe, cached locally after)
   try {
-    const q = encodeURIComponent(trimmed);
-    const url = `https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(effectiveTl)}&client=gtx&q=${q}`;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5000);
-    let res: Response;
-    try {
-      res = await fetch(url, {
-        method: "GET",
-        headers: { "Referer": "https://translate.google.com/" } as any,
-        signal: controller.signal as any,
-        // @ts-ignore - referrer for static fetch
-        referrer: "https://translate.google.com/",
-      });
-    } finally {
-      clearTimeout(timer);
-    }
-    if (res.ok) {
-      const blob = await res.blob();
-      if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
-        const objectUrl = URL.createObjectURL(blob);
-        try {
-          if (typeof FileReader !== "undefined") {
-            const reader = new FileReader();
-            const dataUrl = await new Promise<string>((resolve, reject) => {
-              reader.onload = () => resolve(reader.result as string);
-              reader.onerror = () => reject(reader.error);
-              reader.readAsDataURL(blob);
-            });
-            memAudioCache.set(key, dataUrl);
-            await idbSet(key, dataUrl);
-            if (typeof Audio !== "undefined") {
-              const a = new Audio(dataUrl);
-              currentAudio = a;
-              await a.play();
-              setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
-              return;
-            }
+    const proxyBlob = await tryProxyTts(effectiveTl, trimmed);
+    if (proxyBlob) {
+      try {
+        const dataUrl = await blobToDataUrl(proxyBlob);
+        memAudioCache.set(key, dataUrl);
+        await idbSet(key, dataUrl);
+        if (typeof Audio !== "undefined") {
+          const a = new Audio(dataUrl);
+          currentAudio = a;
+          await a.play();
+          // also create objectUrl path for revoke parity if needed
+          if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
+            const objectUrl = URL.createObjectURL(proxyBlob);
+            setTimeout(() => {
+              try { URL.revokeObjectURL(objectUrl); } catch {}
+            }, 5000);
           }
+          return;
+        }
+      } catch {
+        // if dataUrl conversion fails, try objectUrl directly
+        if (typeof URL !== "undefined" && typeof Audio !== "undefined") {
+          const objectUrl = URL.createObjectURL(proxyBlob);
+          try {
+            const a = new Audio(objectUrl);
+            currentAudio = a;
+            await a.play();
+            setTimeout(() => {
+              try { URL.revokeObjectURL(objectUrl); } catch {}
+            }, 5000);
+            // still cache dataUrl async for next time
+            blobToDataUrl(proxyBlob).then((du) => {
+              memAudioCache.set(key, du);
+              void idbSet(key, du);
+            }).catch(() => {});
+            return;
+          } catch {
+            try { URL.revokeObjectURL(objectUrl); } catch {}
+          }
+        }
+      }
+    }
+  } catch {
+    // fall through to direct
+  }
+
+  // 4. direct Google translate_tts fetch (may fail CORS on preview / web artifact)
+  try {
+    const directBlob = await tryDirectTts(effectiveTl, trimmed);
+    if (directBlob) {
+      try {
+        if (typeof FileReader !== "undefined") {
+          const dataUrl = await blobToDataUrl(directBlob);
+          memAudioCache.set(key, dataUrl);
+          await idbSet(key, dataUrl);
           if (typeof Audio !== "undefined") {
+            const a = new Audio(dataUrl);
+            currentAudio = a;
+            await a.play();
+            if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
+              const objectUrl = URL.createObjectURL(directBlob);
+              setTimeout(() => {
+                try { URL.revokeObjectURL(objectUrl); } catch {}
+              }, 5000);
+            }
+            return;
+          }
+        }
+        if (typeof URL !== "undefined" && typeof Audio !== "undefined") {
+          const objectUrl = URL.createObjectURL(directBlob);
+          try {
             const a = new Audio(objectUrl);
             currentAudio = a;
             await a.play();
             setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
             return;
-          }
-        } catch {
-          if (typeof Audio !== "undefined") {
-            const a = new Audio(objectUrl);
-            currentAudio = a;
-            await a.play().catch(()=>{});
-            setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
-            return;
+          } catch {
+            try { URL.revokeObjectURL(objectUrl); } catch {}
           }
         }
+      } catch {
+        // fall through
       }
     }
   } catch {
     // fall through to speechSynthesis
   }
 
-  // 4. speechSynthesis fallback (client-only, no network)
+  // 5. speechSynthesis fallback (client-only, no network, always cached via Web Speech)
   try {
     if (isClient() && window.speechSynthesis && typeof SpeechSynthesisUtterance !== "undefined") {
       const utter = new SpeechSynthesisUtterance(trimmed);
