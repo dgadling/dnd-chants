@@ -123,7 +123,7 @@ export function MobileCard(props: Props) {
         <span className={`text-[11px] uppercase tracking-widest font-semibold ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>Try wording</span>
         <input
           aria-label={`Try phrasing for ${spell.name} mobile`}
-          className={`w-full rounded-xl border px-3 py-3 text-[15px] placeholder:text-zinc-500 focus:outline-none focus:ring-2 ${isLight ? "focus:ring-blue-500 focus:border-blue-500 border-zinc-300 bg-white text-zinc-900" : "focus:ring-amber-400 focus:border-amber-400 border-zinc-700 bg-zinc-900 text-zinc-100"}`}
+          className={`w-full rounded-xl border px-3 py-3 text-[15px] placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus-ring-accent ${isLight ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-700 bg-zinc-900 text-zinc-100"}`}
           value={input}
           onChange={(e) => handleInputChange(e.target.value)}
           placeholder="e.g. spying eye"
@@ -139,7 +139,7 @@ export function MobileCard(props: Props) {
 
       <button
         aria-label={`Translate ${spell.name} mobile`}
-        className={`w-full inline-flex items-center justify-center gap-2 rounded-xl text-[15px] font-semibold h-11 active:scale-[0.98] transition-transform disabled:opacity-60 disabled:active:scale-100 ${isLight ? "bg-blue-500 text-white hover:bg-blue-600" : "bg-amber-400 text-black hover:bg-amber-300"}`}
+        className={`w-full inline-flex items-center justify-center gap-2 rounded-xl text-[15px] font-semibold h-11 active:scale-[0.98] transition-transform disabled:opacity-60 disabled:active:scale-100 btn-accent`}
         disabled={!input.trim() || isTranslating}
         onClick={handleTranslate}
         type="button"
@@ -157,7 +157,7 @@ export function MobileCard(props: Props) {
         <span className={`text-[11px] uppercase tracking-widest font-semibold ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>Translation</span>
         <input
           aria-label={`Translation for ${spell.name} mobile`}
-          className={`w-full rounded-xl border px-3 text-[15px] placeholder:text-zinc-500 focus:outline-none focus:ring-2 ${isLight ? "focus:ring-blue-500 focus:border-blue-500 border-zinc-300 bg-white text-zinc-900" : "focus:ring-amber-400 focus:border-amber-400 border-zinc-700 bg-zinc-900 text-zinc-100"}`}
+          className={`w-full rounded-xl border px-3 text-[15px] placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus-ring-accent ${isLight ? "border-zinc-300 bg-white text-zinc-900" : "border-zinc-700 bg-zinc-900 text-zinc-100"}`}
           style={{ height: "44px" }}
           value={boxText}
           onChange={(e) => handleBoxChange(e.target.value)}

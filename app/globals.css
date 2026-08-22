@@ -8,6 +8,12 @@
   --border: #3f3f46;
   --text: #f4f4f5;
   --dim: #a1a1aa;
+  --accent: #fbbf24;
+  --accent-hover: #f59e0b;
+  --accent-text: #000000;
+  --accent-soft: #27272a;
+  --accent-soft-border: rgba(251, 191, 36, 0.4);
+  --accent-soft-text: rgba(253, 230, 138, 0.9);
 }
 
 [data-theme="light"] {
@@ -16,9 +22,63 @@
   --border: #e4e4e7;
   --text: #18181b;
   --dim: #71717a;
+  --accent: #0ea5e9;
+  --accent-hover: #0284c7;
+  --accent-text: #ffffff;
+  --accent-soft: #f0f9ff;
+  --accent-soft-border: rgba(14, 165, 233, 0.3);
+  --accent-soft-text: #2563eb;
+}
+
+/* Theme-aware accent utilities – replaces all isLight ternaries for accent */
+.btn-accent {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+.btn-accent:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+.bg-accent {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.accent-dot {
+  background: var(--accent);
+}
+.accent-pill {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+.active-row {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+}
+.text-accent {
+  color: var(--accent);
+}
+.text-accent-soft {
+  color: var(--accent-soft-text);
+}
+.focus-ring-accent:focus {
+  --tw-ring-color: var(--accent);
+}
+.border-accent {
+  border-color: var(--accent);
+}
+.ring-accent {
+  --tw-ring-color: var(--accent);
 }
 
 * { box-sizing: border-box; }
+html {
+  background: var(--bg);
+  color-scheme: dark light;
+}
+[data-theme="light"] { color-scheme: light; }
+[data-theme="dark"] { color-scheme: dark; }
 html, body { height: 100%; }
 body {
   margin: 0;

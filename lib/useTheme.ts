@@ -21,6 +21,18 @@ function resolve(pref: ThemePref): ResolvedTheme {
   return getSystem();
 }
 
+function syncThemeColor(r: ResolvedTheme) {
+  try {
+    let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "theme-color";
+      document.head.appendChild(meta);
+    }
+    meta.content = r === "light" ? "#fafaf9" : "#18181b";
+  } catch {}
+}
+
 export function useTheme() {
   const [pref, setPrefState] = useState<ThemePref>("auto");
   const [actual, setActual] = useState<ResolvedTheme>("dark");
@@ -33,16 +45,19 @@ export function useTheme() {
         const r = resolve(raw);
         setActual(r);
         document.documentElement.setAttribute("data-theme", r);
+        syncThemeColor(r);
       } else {
         const sys = getSystem();
         setActual(sys);
         document.documentElement.setAttribute("data-theme", sys);
+        syncThemeColor(sys);
       }
     } catch {
       const sys = getSystem();
       setActual(sys);
       try {
         document.documentElement.setAttribute("data-theme", sys);
+        syncThemeColor(sys);
       } catch {}
     }
   }, []);
@@ -52,6 +67,7 @@ export function useTheme() {
     setActual(r);
     try {
       document.documentElement.setAttribute("data-theme", r);
+      syncThemeColor(r);
     } catch {}
   }, [pref]);
 
@@ -63,6 +79,7 @@ export function useTheme() {
       setActual(r);
       try {
         document.documentElement.setAttribute("data-theme", r);
+        syncThemeColor(r);
       } catch {}
     };
     try {
@@ -92,6 +109,7 @@ export function useTheme() {
     setActual(r);
     try {
       document.documentElement.setAttribute("data-theme", r);
+      syncThemeColor(r);
     } catch {}
   }, []);
 
