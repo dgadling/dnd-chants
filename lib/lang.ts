@@ -270,9 +270,10 @@ export function getLangName(code: string): string {
 }
 
 export function getLangOptionDisplay(o: { code: string; label: string }): string {
+  let lbl = o.label;
   const suffix = ` (${o.code})`;
-  if (o.label.endsWith(suffix)) return o.label;
-  return `${o.label} (${o.code})`;
+  if (lbl.endsWith(suffix)) lbl = lbl.slice(0, -suffix.length);
+  return lbl;
 }
 
 export function formatBox(native: string, roman: string): string {
