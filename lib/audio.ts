@@ -1,273 +1,128 @@
-/* client IDB audio cache – mem → IDB → proxy /api/tts → direct gtx → speechSynthesis fallback – SSR safe */
-const DB_NAME = "dnd-chants-audio";
+/* mem LRU 50 → IDB → proxy /api/tts → speechSynthesis – SSR safe */
+const DB = "dnd-chants-audio";
 const STORE = "audio";
-const DB_VERSION = 1;
+const MAX = 50;
+const mem = new Map<string, string>();
 
-const memAudioCache = new Map<string, string>();
+const isClient = () => typeof window !== "undefined";
 
-function isClient(): boolean {
-  return typeof window !== "undefined";
+function memSet(k: string, v: string) {
+  if (mem.has(k)) mem.delete(k);
+  else if (mem.size >= MAX) {
+    const f = mem.keys().next().value as string | undefined;
+    if (f) mem.delete(f);
+  }
+  mem.set(k, v);
+}
+function memGet(k: string) {
+  const v = mem.get(k);
+  if (v !== undefined) { mem.delete(k); mem.set(k, v); }
+  return v;
 }
 
-function openAudioDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    if (!isClient() || typeof indexedDB === "undefined" || !("indexedDB" in window)) {
-      reject(new Error("no indexedDB"));
-      return;
-    }
+function openDB(): Promise<IDBDatabase> {
+  return new Promise((res, rej) => {
+    if (!isClient()) return rej(new Error("ssr"));
     try {
-      const req = indexedDB.open(DB_NAME, DB_VERSION);
-      req.onupgradeneeded = () => {
-        const db = req.result;
-        if (!db.objectStoreNames.contains(STORE)) {
-          db.createObjectStore(STORE);
-        }
+      const r = indexedDB.open(DB, 1);
+      r.onupgradeneeded = () => {
+        const d = r.result;
+        if (!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE);
       };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    } catch (e) {
-      reject(e as Error);
-    }
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    } catch (e) { rej(e as Error); }
   });
 }
-
-async function idbGet(key: string): Promise<string | null> {
+async function idbGet(k: string): Promise<string | null> {
   try {
-    const db = await openAudioDB();
-    return await new Promise((resolve, reject) => {
+    const db = await openDB();
+    return await new Promise((a, b) => {
       const tx = db.transaction(STORE, "readonly");
-      const store = tx.objectStore(STORE);
-      const req = store.get(key);
-      req.onsuccess = () => resolve((req.result as string) || null);
-      req.onerror = () => reject(req.error);
+      const q = tx.objectStore(STORE).get(k);
+      q.onsuccess = () => a((q.result as string) || null);
+      q.onerror = () => b(q.error);
     });
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
-
-async function idbSet(key: string, val: string): Promise<void> {
+async function idbSet(k: string, v: string) {
   try {
-    const db = await openAudioDB();
-    await new Promise<void>((resolve, reject) => {
+    const db = await openDB();
+    await new Promise<void>((a, b) => {
       const tx = db.transaction(STORE, "readwrite");
-      const store = tx.objectStore(STORE);
-      const req = store.put(val, key);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
+      const q = tx.objectStore(STORE).put(v, k);
+      q.onsuccess = () => a();
+      q.onerror = () => b(q.error);
     });
-  } catch {
-    // ignore IDB errors
-  }
-}
-
-let currentAudio: HTMLAudioElement | null = null;
-
-export function cancelCurrentAudio(): void {
-  try {
-    if (isClient() && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
   } catch {}
-  if (currentAudio) {
-    try {
-      currentAudio.pause();
-      currentAudio.src = "";
-    } catch {}
-    currentAudio = null;
-  }
 }
 
-async function tryProxyTts(tl: string, q: string): Promise<Blob | null> {
-  if (!isClient()) return null;
-  const url = `/api/tts?tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(q)}`;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 8000);
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      headers: { Accept: "audio/mpeg" },
-      signal: controller.signal as any,
-    });
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    if (!blob || blob.size === 0) return null;
-    return blob;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
+let cur: HTMLAudioElement | null = null;
+export function cancelCurrentAudio() {
+  try { if (isClient() && window.speechSynthesis) window.speechSynthesis.cancel(); } catch {}
+  if (cur) { try { cur.pause(); cur.src = ""; } catch {} cur = null; }
 }
 
-async function tryDirectTts(tl: string, q: string): Promise<Blob | null> {
-  if (!isClient()) return null;
-  const url = `https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(tl)}&client=gtx&q=${encodeURIComponent(q)}`;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000);
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      headers: { Referer: "https://translate.google.com/" } as any,
-      signal: controller.signal as any,
-      // @ts-ignore - referrer for static fetch
-      referrer: "https://translate.google.com/",
-    });
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    if (!blob || blob.size === 0) return null;
-    return blob;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function blobToDataUrl(blob: Blob): Promise<string> {
-  return await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
+function toDataUrl(b: Blob): Promise<string> {
+  return new Promise((a, c) => {
+    const fr = new FileReader();
+    fr.onload = () => a(fr.result as string);
+    fr.onerror = () => c(fr.error);
+    fr.readAsDataURL(b);
   });
 }
+async function playOne(src: string) {
+  if (typeof Audio === "undefined") throw new Error("no Audio");
+  const a = new Audio(src);
+  cur = a;
+  await a.play();
+}
+async function proxyTl(tl: string, q: string): Promise<Blob | null> {
+  if (!isClient()) return null;
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), 8000);
+  try {
+    const r = await fetch(`/api/tts?tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(q)}`, {
+      signal: ac.signal as any,
+    });
+    if (!r.ok) return null;
+    const b = await r.blob();
+    return b && b.size ? b : null;
+  } catch { return null; }
+  finally { clearTimeout(t); }
+}
 
-export async function playCachedAudio(text: string, targetLang: string): Promise<void> {
+export async function playCachedAudio(text: string, lang: string) {
   if (!isClient()) return;
-  const trimmed = text.trim().slice(0, 200);
-  if (!trimmed) return;
+  const tr = text.trim().slice(0, 200);
+  if (!tr) return;
   const { getGoogleTl, getSpeechLang } = await import("./lang");
-  const effectiveTl = getGoogleTl(targetLang) || targetLang;
-  const key = `${effectiveTl}|${trimmed.toLowerCase()}`;
+  const tl = getGoogleTl(lang) || lang;
+  const key = `${tl}|${tr.toLowerCase()}`;
   cancelCurrentAudio();
 
-  // 1. mem cache (dataURL)
-  const mem = memAudioCache.get(key);
-  if (mem) {
-    try {
-      if (typeof Audio === "undefined") throw new Error("no Audio");
-      const a = new Audio(mem);
-      currentAudio = a;
-      await a.play();
-      return;
-    } catch {
-      // fall through
-    }
-  }
+  const m = memGet(key);
+  if (m) { try { await playOne(m); return; } catch {} }
 
-  // 2. IDB cache
   const idb = await idbGet(key);
-  if (idb) {
-    memAudioCache.set(key, idb);
-    try {
-      if (typeof Audio === "undefined") throw new Error("no Audio");
-      const a = new Audio(idb);
-      currentAudio = a;
-      await a.play();
+  if (idb) { memSet(key, idb); try { await playOne(idb); return; } catch {} }
+
+  try {
+    const bl = await proxyTl(tl, tr);
+    if (bl) {
+      const du = await toDataUrl(bl);
+      memSet(key, du);
+      void idbSet(key, du);
+      await playOne(du);
       return;
-    } catch {
-      // fall through
     }
-  }
+  } catch {}
 
-  // 3. proxy /api/tts (same-origin, CORS-safe, cached locally after)
-  try {
-    const proxyBlob = await tryProxyTts(effectiveTl, trimmed);
-    if (proxyBlob) {
-      try {
-        const dataUrl = await blobToDataUrl(proxyBlob);
-        memAudioCache.set(key, dataUrl);
-        await idbSet(key, dataUrl);
-        if (typeof Audio !== "undefined") {
-          const a = new Audio(dataUrl);
-          currentAudio = a;
-          await a.play();
-          // also create objectUrl path for revoke parity if needed
-          if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
-            const objectUrl = URL.createObjectURL(proxyBlob);
-            setTimeout(() => {
-              try { URL.revokeObjectURL(objectUrl); } catch {}
-            }, 5000);
-          }
-          return;
-        }
-      } catch {
-        // if dataUrl conversion fails, try objectUrl directly
-        if (typeof URL !== "undefined" && typeof Audio !== "undefined") {
-          const objectUrl = URL.createObjectURL(proxyBlob);
-          try {
-            const a = new Audio(objectUrl);
-            currentAudio = a;
-            await a.play();
-            setTimeout(() => {
-              try { URL.revokeObjectURL(objectUrl); } catch {}
-            }, 5000);
-            // still cache dataUrl async for next time
-            blobToDataUrl(proxyBlob).then((du) => {
-              memAudioCache.set(key, du);
-              void idbSet(key, du);
-            }).catch(() => {});
-            return;
-          } catch {
-            try { URL.revokeObjectURL(objectUrl); } catch {}
-          }
-        }
-      }
-    }
-  } catch {
-    // fall through to direct
-  }
-
-  // 4. direct Google translate_tts fetch (may fail CORS on preview / web artifact)
-  try {
-    const directBlob = await tryDirectTts(effectiveTl, trimmed);
-    if (directBlob) {
-      try {
-        if (typeof FileReader !== "undefined") {
-          const dataUrl = await blobToDataUrl(directBlob);
-          memAudioCache.set(key, dataUrl);
-          await idbSet(key, dataUrl);
-          if (typeof Audio !== "undefined") {
-            const a = new Audio(dataUrl);
-            currentAudio = a;
-            await a.play();
-            if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
-              const objectUrl = URL.createObjectURL(directBlob);
-              setTimeout(() => {
-                try { URL.revokeObjectURL(objectUrl); } catch {}
-              }, 5000);
-            }
-            return;
-          }
-        }
-        if (typeof URL !== "undefined" && typeof Audio !== "undefined") {
-          const objectUrl = URL.createObjectURL(directBlob);
-          try {
-            const a = new Audio(objectUrl);
-            currentAudio = a;
-            await a.play();
-            setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
-            return;
-          } catch {
-            try { URL.revokeObjectURL(objectUrl); } catch {}
-          }
-        }
-      } catch {
-        // fall through
-      }
-    }
-  } catch {
-    // fall through to speechSynthesis
-  }
-
-  // 5. speechSynthesis fallback (client-only, no network, always cached via Web Speech)
   try {
     if (isClient() && window.speechSynthesis && typeof SpeechSynthesisUtterance !== "undefined") {
-      const utter = new SpeechSynthesisUtterance(trimmed);
-      utter.lang = getSpeechLang(targetLang);
-      window.speechSynthesis.speak(utter);
-      return;
+      const u = new SpeechSynthesisUtterance(tr);
+      u.lang = getSpeechLang(lang);
+      window.speechSynthesis.speak(u);
     }
   } catch {}
 }
