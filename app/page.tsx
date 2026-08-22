@@ -668,7 +668,7 @@ export default function LabPage() {
             </span>
           </button>
           <div className="min-w-0 flex-1">
-            <div className="font-semibold text-[15px] tracking-tight leading-none">D&D Chants</div>
+            <div className="font-semibold text-[15px] tracking-tight leading-none">🐉 D&D Chants</div>
             <div className="text-[11px] text-zinc-400 truncate mt-0.5">
               {activeCharacter ? `${characterName || "Character"} • ${totalVerbal}` : "No character"}
             </div>
@@ -678,7 +678,7 @@ export default function LabPage() {
         <main className="flex-1 mx-auto w-full max-w-5xl px-3 py-4 lg:px-6 lg:py-6 pb-10">
           {/* Desktop header - no Refresh, no active details here */}
           <header className="mb-5 hidden lg:block">
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight">D&D Chants</h1>
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight">🐉 D&D Chants</h1>
             <p className="mt-1 text-[13px] md:text-sm text-zinc-400 max-w-[34rem] leading-snug">
               {totalVerbal ? `${totalVerbal} spells grouped by school. ` : ""}Type a new English cue, hit ▶ to translate, 🔊 to hear it.
             </p>
