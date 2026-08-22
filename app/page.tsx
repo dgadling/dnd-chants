@@ -852,8 +852,8 @@ export default function LabPage() {
                   <div className="rounded-lg bg-zinc-900/70 border border-zinc-700/60 p-4 flex gap-3">
                     <div className="h-7 w-7 rounded-full bg-amber-400 text-black grid place-items-center text-[12px] font-bold shrink-0">2</div>
                     <div className="min-w-0">
-                      <div className="text-[13px] font-semibold text-zinc-100">Pick a spell and write your cue</div>
-                      <div className="text-[12px] text-zinc-400 mt-1 leading-snug">Choose a school, type an English cue, translate and play audio.</div>
+                      <div className="text-[13px] font-semibold text-zinc-100">Brainstorm with Google</div>
+                      <div className="text-[12px] text-zinc-400 mt-1 leading-snug">Stuck? Use Help to brainstorm ideas, then edit your cue, translate and play audio.</div>
                     </div>
                   </div>
                   <div className="rounded-lg bg-zinc-900/70 border border-zinc-700/60 p-4 flex gap-3">

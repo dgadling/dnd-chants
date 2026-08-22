@@ -178,7 +178,7 @@ export function MobileCard(props: Props) {
           className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-100 text-[14px] font-medium active:bg-zinc-700"
           onClick={handleIdiom}
           type="button"
-          title={`Help for ${spell.name} in ${langName}`}
+          title={`Brainstorm with Google for ${spell.name} in ${langName}`}
         >
           <span>💬</span>
           <span>Idiom</span>

@@ -166,7 +166,7 @@ export function DesktopRow(props: Props) {
             className="inline-flex h-8 w-8 min-w-[32px] shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-sm hover:bg-zinc-700 align-middle"
             onClick={handleIdiom}
             type="button"
-            title={`Help for ${spell.name} in ${getLangName(targetLang)}`}
+            title={`Brainstorm with Google for ${spell.name} in ${getLangName(targetLang)}`}
           >
             💬
           </button>
