@@ -5,6 +5,7 @@ import { SCHOOLS, SCHOOL_DEFAULTS, LANG_OPTIONS, getLangOptionDisplay, formatBox
 import type { School } from "@/lib/lang";
 import { DesktopRow } from "@/components/DesktopRow";
 import { MobileCard } from "@/components/MobileCard";
+import { fetchCharacterClient, extractId as extractIdClient } from "@/lib/dndbeyond-client";
 
 type Spell = {
   name: string;
@@ -179,21 +180,15 @@ export default function LabPage() {
   };
 
   const fetchCharacter = async (idOrUrl: string, opts: { silent?: boolean } = {}) => {
-    const id = extractIdForDisplay(idOrUrl);
+    const id = extractIdClient(idOrUrl);
     if (!id) {
       if (!opts.silent) setLinkStatus("Could not parse id – paste URL like https://www.dndbeyond.com/characters/12345678");
       return;
     }
     setIsLinking(true);
-    if (!opts.silent) setLinkStatus("Fetching character…");
+    if (!opts.silent) setLinkStatus("Fetching character… (direct browser fetch, may be blocked by CORS)");
     try {
-      const res = await fetch("/api/dndbeyond", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ urlOrId: id }),
-      });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j?.error || res.statusText);
+      const j = await fetchCharacterClient(id);
       const spells: Spell[] = (j.spells || []).map((s: any) => ({ name: s.name, school: s.school }));
       const charName = j.characterName || "";
       const fetchTime = j.fetchTime || new Date().toISOString();
@@ -213,11 +208,11 @@ export default function LabPage() {
         spells,
       });
       if (!opts.silent) {
-        setLinkStatus(`Loaded ${charName ? charName + " – " : ""}${spells.length} spells`);
+        setLinkStatus(`Loaded ${charName ? charName + " – " : ""}${spells.length} verbal spells (direct fetch)`);
         setTimeout(() => setLinkStatus(""), 2500);
       }
     } catch (e: any) {
-      if (!opts.silent) setLinkStatus(`Error: ${String(e?.message || e).slice(0, 120)}`);
+      if (!opts.silent) setLinkStatus(`Error: ${String(e?.message || e).slice(0, 200)}`);
     } finally {
       setIsLinking(false);
     }
