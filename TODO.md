@@ -85,3 +85,7 @@ This file tracks meaningful chunks of work left, excluding deployment steps. All
 - Hooks: only commit-msg style `^(fix|feat|chore|docs|style|refactor|perf|test|build|ci|revert)(\([a-z0-9._-]+\))?!?:.+` enforced
 - Build green locally with `bun run build` – verified after next.config.js cleanup (removed ignoreBuildErrors and outputFileTracing)
 - No push to origin yet – hold until OK, no gcloud execution per user stop
+
+## Open Questions
+
+- 5b: Client-specific random salt vs multi-device: currently salt=uid deterministic gives same key on all devices for same PIN. Random per-device salt breaks multi-device. Solution: generate random salt per user on first enable, store salt in Firestore backup doc (or users/{uid} doc) alongside iv/ciphertext, so all devices fetch same salt and derive same key from same PIN – gives per-user randomness + multi-device. Alternative: server pepper from Secret Manager. Need decision.

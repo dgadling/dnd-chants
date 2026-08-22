@@ -2,7 +2,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /backups/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['iv', 'ciphertext'])
+        && request.resource.data.iv is string
+        && request.resource.data.ciphertext is string
+        && request.resource.data.iv.size() < 100
+        && request.resource.data.ciphertext.size() < 800000;
     }
   }
 }
