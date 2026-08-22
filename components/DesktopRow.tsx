@@ -24,11 +24,8 @@ export function DesktopRow(props: Props) {
   const { spell, targetLang, school, initialInput, initialNative, initialRoman, onSave } = props;
   const [input, setInput] = useState(initialInput || "");
   const [boxText, setBoxText] = useState(() => formatBox(initialNative, initialRoman));
-  const [justSaved, setJustSaved] = useState(false);
-  const [saveFailed, setSaveFailed] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [transError, setTransError] = useState<string>("");
-  const [isSaving, setIsSaving] = useState(false);
   const lastTranslatedRef = useRef<string>("");
 
   // sync input when preload arrives
@@ -48,6 +45,26 @@ export function DesktopRow(props: Props) {
   const effectiveNative = parsed.native;
   const effectiveRoman = parsed.roman;
 
+  const autosave = useCallback((enPhrase: string, nat: string, rom: string) => {
+    if (!onSave) return;
+    const ep = enPhrase.trim().slice(0, 500);
+    const n = nat.slice(0, 1000);
+    const r = rom.slice(0, 1000);
+    if (!ep && !n) return;
+    onSave(ep, n, r);
+  }, [onSave]);
+
+  const handleInputChange = (v: string) => {
+    setInput(v);
+    autosave(v, effectiveNative, effectiveRoman);
+  };
+
+  const handleBoxChange = (v: string) => {
+    setBoxText(v);
+    const p = parseBox(v);
+    autosave(input, p.native, p.roman);
+  };
+
   const handleTranslate = useCallback(async () => {
     const trimmed = input.trim();
     if (!trimmed) return;
@@ -62,13 +79,14 @@ export function DesktopRow(props: Props) {
       const newRoman = (j.romanized as string || "").slice(0, 500);
       const formatted = formatBox(newNative, newRoman);
       setBoxText(formatted);
+      autosave(trimmed, newNative, newRoman);
       lastTranslatedRef.current = norm;
     } catch (e: any) {
       setTransError(String(e?.message || e).slice(0, 80));
     } finally {
       setIsTranslating(false);
     }
-  }, [input, targetLang, effectiveNative, isTranslating]);
+  }, [input, targetLang, effectiveNative, isTranslating, autosave]);
 
   const handlePlay = useCallback(() => {
     const toSpeak = effectiveNative;
@@ -82,36 +100,6 @@ export function DesktopRow(props: Props) {
     window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, "_blank", "popup,width=900,height=700");
   }, [spell.name, targetLang]);
 
-  const handleSave = useCallback(() => {
-    if (!effectiveNative || !input.trim()) return;
-    setSaveFailed(false);
-    setIsSaving(true);
-    try {
-      if (onSave) {
-        onSave(input.trim(), effectiveNative.slice(0, 1000), (effectiveRoman || "").slice(0, 1000));
-      }
-      setJustSaved(true);
-      setSaveFailed(false);
-      setTimeout(() => setJustSaved(false), 2000);
-    } catch {
-      setSaveFailed(true);
-      setTimeout(() => setSaveFailed(false), 3000);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [effectiveNative, effectiveRoman, input, onSave]);
-
-  const saveDisabled = !effectiveNative || !input.trim() || isSaving;
-  const saveTitle = justSaved
-    ? "✓ saved locally 2s"
-    : saveFailed
-    ? "failed 3s – local only, not server"
-    : !effectiveNative
-    ? "Translate first – save is local-only"
-    : isSaving
-    ? "Saving locally..."
-    : "Save locally (browser only, not server)";
-
   return (
     <tr className="border-b border-zinc-700 align-top">
       <td className="py-2 px-2 text-sm font-medium text-zinc-100 whitespace-nowrap max-w-[9rem] truncate">
@@ -122,7 +110,7 @@ export function DesktopRow(props: Props) {
           aria-label={`Try phrasing for ${spell.name}`}
           className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-amber-400"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => handleInputChange(e.target.value)}
           placeholder="try phrasing"
           onKeyDown={(e) => {
             if (e.key === "Enter" && input.trim()) handleTranslate();
@@ -146,7 +134,7 @@ export function DesktopRow(props: Props) {
           aria-label={`Translation for ${spell.name}`}
           className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-[13px] text-zinc-100 focus:outline-none focus:ring-1 focus:ring-amber-400 placeholder:text-zinc-500"
           value={boxText}
-          onChange={(e) => setBoxText(e.target.value)}
+          onChange={(e) => handleBoxChange(e.target.value)}
           placeholder="native [roman]"
         />
         {transError ? (
@@ -155,7 +143,7 @@ export function DesktopRow(props: Props) {
           </div>
         ) : null}
       </td>
-      <td className="py-2 px-1 w-[128px] min-w-[128px] max-w-[128px] whitespace-nowrap">
+      <td className="py-2 px-1 w-[88px] min-w-[88px] max-w-[88px] whitespace-nowrap">
         <div className="flex items-center gap-1 flex-nowrap">
           <button
             aria-label={`Chant help for ${spell.name}`}
@@ -175,22 +163,6 @@ export function DesktopRow(props: Props) {
             title={effectiveNative ? `speak in ${targetLang}` : "no translation yet"}
           >
             🔊
-          </button>
-          <button
-            aria-label={`Save ${spell.name}`}
-            className={`inline-flex h-7 w-[56px] min-w-[56px] max-w-[56px] shrink-0 items-center justify-center rounded-md border text-[11px] font-medium disabled:opacity-60 disabled:cursor-not-allowed px-0 ${
-              saveFailed
-                ? "border-red-400 bg-red-900/30 text-red-300"
-                : justSaved
-                ? "border-emerald-400 bg-emerald-900/30 text-emerald-300"
-                : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
-            }`}
-            disabled={saveDisabled}
-            onClick={handleSave}
-            type="button"
-            title={saveTitle}
-          >
-            {isSaving ? "…" : saveFailed ? "✕" : justSaved ? "✓" : "💾"}
           </button>
         </div>
       </td>

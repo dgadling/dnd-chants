@@ -15,8 +15,6 @@ type Spell = {
 type RowExtra = {
   englishPhrase: string;
   box: string;
-  saving: boolean;
-  status: string;
 };
 
 type StoredCharacter = {
@@ -212,8 +210,6 @@ export default function LabPage() {
                   cleaned[k] = {
                     englishPhrase: typeof v.englishPhrase === "string" ? v.englishPhrase : "",
                     box: typeof v.box === "string" ? v.box : "",
-                    saving: !!v.saving,
-                    status: typeof v.status === "string" ? v.status : "",
                   };
                 }
                 setExtrasPerChar({ [targetId]: cleaned });
@@ -228,8 +224,6 @@ export default function LabPage() {
                   inner[spellName] = {
                     englishPhrase: typeof (v as any).englishPhrase === "string" ? (v as any).englishPhrase : "",
                     box: typeof (v as any).box === "string" ? (v as any).box : "",
-                    saving: !!(v as any).saving,
-                    status: typeof (v as any).status === "string" ? (v as any).status : "",
                   };
                 }
                 cleanedPerChar[charId] = inner;
@@ -466,15 +460,15 @@ export default function LabPage() {
   const handleSave = useCallback((spellName: string, englishPhrase: string, native: string, roman: string) => {
     if (!activeId) return;
     const box = formatBox(native, roman);
+    const cleanPhrase = (englishPhrase || "").slice(0, 500);
+    const cleanBox = box.slice(0, 1100);
     setExtrasPerChar((prev) => ({
       ...prev,
       [activeId]: {
         ...(prev[activeId] || {}),
         [spellName]: {
-          englishPhrase,
-          box,
-          saving: false,
-          status: `✓ saved locally ${native.slice(0, 20)}`,
+          englishPhrase: cleanPhrase,
+          box: cleanBox,
         },
       },
     }));
@@ -641,7 +635,7 @@ export default function LabPage() {
           <header className="mb-5 hidden lg:block">
             <h1 className="text-xl md:text-2xl font-bold tracking-tight">D&D Chants</h1>
             <p className="mt-1 text-[13px] md:text-sm text-zinc-400 max-w-[34rem] leading-snug">
-              {totalVerbal ? `${totalVerbal} spells grouped by school. ` : ""}Type a new English cue, hit ▶ to translate, 🔊 to hear it, 💾 to save locally.
+              {totalVerbal ? `${totalVerbal} spells grouped by school. ` : ""}Type a new English cue, hit ▶ to translate, 🔊 to hear it.
             </p>
           </header>
 
@@ -746,7 +740,7 @@ export default function LabPage() {
                       <th className="py-2 px-2 font-medium">Try phrasing</th>
                       <th className="py-2 px-1 font-medium">Go</th>
                       <th className="py-2 px-2 font-medium">Result</th>
-                      <th className="py-2 px-1 font-medium w-[128px] min-w-[128px] max-w-[128px] whitespace-nowrap">Save / Audio</th>
+                      <th className="py-2 px-1 font-medium w-[88px] min-w-[88px] max-w-[88px] whitespace-nowrap">Audio / Help</th>
                     </tr>
                   </thead>
                   <tbody>
