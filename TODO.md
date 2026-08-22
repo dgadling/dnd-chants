@@ -89,3 +89,21 @@ This file tracks meaningful chunks of work left, excluding deployment steps. All
 ## Open Questions
 
 - 5b: Client-specific random salt vs multi-device: currently salt=uid deterministic gives same key on all devices for same PIN. Random per-device salt breaks multi-device. Solution: generate random salt per user on first enable, store salt in Firestore backup doc (or users/{uid} doc) alongside iv/ciphertext, so all devices fetch same salt and derive same key from same PIN – gives per-user randomness + multi-device. Alternative: server pepper from Secret Manager. Need decision.
+
+## FE Batch 7-12 (upcoming, after backend push cd6103d)
+
+1. backend - move to node 22. just move and run the tests to make sure everything is good - DONE cd6103d (2443fe0..daffe3f)
+2. backend - fix the open redirect, XSS, CORS - DONE
+3. backend - add validation - the IV is a fixed length, right? check that. also the ciphertext.length limit sounds good, also the base64 validation - DONE 800k
+4. backend + frontend - use server timestamp, there is no longer a race to check for so remove any logic for that. update the front end to not send updatedAt - DONE
+5. firebase - add nosniff, add the size check, set field allowlist to 'iv' and 'ciphertext' - DONE dc9934f
+6. backend - break up the God function n functions/src/index.ts - DONE cd6103d
+7. frontend - do encryption in a Worker
+8. frontend - break up app/page.tsx
+9. frontend - the efficiency work now - removing the ternaries, using loops, using constants, etc
+10. frontend - DRY between DesktopRow and MobileCard
+11. frontend - simplify lib/audio.ts as described
+12. frontend - break up lib/useBackup.ts, or at least do something to fix the deep nesting
+13. frontend - fix language selector stays white in dark mode - dark mode text and down arrow should both be white, light mode fine (app/page.tsx select line 933)
+
+- 13 detail: select currently uses `bg-white text-zinc-900 dark:bg-zinc-800` which doesn't work with data-theme isLight approach. Should use CSS vars --surface --border --text (no isLight ternary) - part of zero-ternary goal task 9

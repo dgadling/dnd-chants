@@ -151,3 +151,21 @@ body {
   color: #101010;
   font-weight: 700;
 }
+
+/* Language selector – uses CSS vars, no isLight ternary, fixes dark mode white-on-white */
+.select-lang {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+  color-scheme: light dark;
+}
+[data-theme="light"] .select-lang {
+  color-scheme: light;
+}
+[data-theme="dark"] .select-lang {
+  color-scheme: dark;
+}
+.select-lang option {
+  background: var(--surface);
+  color: var(--text);
+}
