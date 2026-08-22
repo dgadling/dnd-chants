@@ -115,7 +115,7 @@ export default function LabPage() {
     return characters.find((c) => c.characterId === activeId) || characters[0];
   }, [characters, activeId]);
 
-  const spellsArr = activeCharacter?.spells || [];
+  const spellsArr = useMemo(() => activeCharacter?.spells || [], [activeCharacter]);
   const characterId = activeCharacter?.characterId || "";
   const characterName = activeCharacter?.characterName || "";
   const lastFetchISO = activeCharacter?.lastFetchISO || "";
