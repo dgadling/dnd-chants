@@ -18,7 +18,8 @@ function getRedirectUri(req: any): string {
         u.hostname === "chants-506202.web.app" ||
         u.hostname === "chants-506202.firebaseapp.com" ||
         u.hostname === "localhost" ||
-        u.hostname === "127.0.0.1"
+        u.hostname === "127.0.0.1" ||
+        u.hostname.startsWith("chants-506202--")
       )
         return override;
     } catch {}
@@ -29,7 +30,7 @@ function getRedirectUri(req: any): string {
 function buildPostMessageHtml(payload: any): string {
   return `<!doctype html><html><body><script>(function(){var payload=${safeJson(
     payload
-  )};var targetOrigin=window.location.origin;var allowed=["https://chants-506202.web.app","https://chants-506202.firebaseapp.com",targetOrigin];if(window.opener){try{window.opener.postMessage(payload,targetOrigin);}catch(e){}for(var i=0;i<allowed.length;i++){try{if(allowed[i]!==targetOrigin) window.opener.postMessage(payload,allowed[i]);}catch(e){}}}document.body.innerText=payload.type==="discord-auth-error"?"Discord auth failed: "+(payload.error||"unknown")+" – you can close this window.":"Discord login successful – you can close this window.";})();</script></body></html>`;
+  )};var targetOrigin=window.location.origin;var allowed=["https://chants-506202.web.app","https://chants-506202.firebaseapp.com",targetOrigin];var openerOrigin="";try{if(window.opener){try{openerOrigin=window.opener.location.origin;}catch(e){}}}catch(e){}if(openerOrigin){try{allowed.push(openerOrigin);}catch(e){}}try{window.opener.postMessage(payload,openerOrigin);}catch(e){}try{window.opener.postMessage(payload,"*");}catch(e){}}if(window.opener){try{window.opener.postMessage(payload,targetOrigin);}catch(e){}for(var i=0;i<allowed.length;i++){try{if(allowed[i]!==targetOrigin) window.opener.postMessage(payload,allowed[i]);}catch(e){}}}document.body.innerText=payload.type==="discord-auth-error"?"Discord auth failed: "+(payload.error||"unknown")+" – you can close this window.":"Discord login successful – you can close this window.";})();</script></body></html>`;
 }
 
 export const discordAuthCallback = onRequest(
@@ -38,11 +39,7 @@ export const discordAuthCallback = onRequest(
     memory: "256MiB",
     timeoutSeconds: 15,
     concurrency: 40,
-    cors: [
-      "https://chants-506202.web.app",
-      "https://chants-506202.firebaseapp.com",
-      "http://localhost:3000",
-    ],
+    cors: true,
     secrets: [DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET],
   },
   async (req, res) => {

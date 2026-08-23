@@ -28,7 +28,15 @@ export function formatLocalTimestamp(d = new Date()): string {
 export function isAllowedOrigin(origin: string): boolean {
   if (!origin) return false;
   if (typeof window !== "undefined" && origin === window.location.origin) return true;
-  return origin === "https://chants-506202.web.app" || origin === "https://chants-506202.firebaseapp.com";
+  if (origin === "https://chants-506202.web.app" || origin === "https://chants-506202.firebaseapp.com") return true;
+  try {
+    const u = new URL(origin);
+    if (u.hostname.endsWith(".web.app") || u.hostname.endsWith(".firebaseapp.com")) {
+      if (u.hostname === "chants-506202.web.app" || u.hostname === "chants-506202.firebaseapp.com") return true;
+      if (u.hostname.startsWith("chants-506202--")) return true;
+    }
+  } catch {}
+  return false;
 }
 
 export async function backupToCloud(payload: any, uid: string, pin?: string) {
