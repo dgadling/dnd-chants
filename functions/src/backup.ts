@@ -3,21 +3,41 @@ import * as admin from "firebase-admin";
 
 if (!admin.apps.length) admin.initializeApp();
 
+function isAllowedCorsOrigin(origin: string): boolean {
+  if (!origin) return false;
+  if (origin === "https://chants-506202.web.app") return true;
+  if (origin === "https://chants-506202.firebaseapp.com") return true;
+  if (origin === "http://localhost:3000") return true;
+  if (origin === "http://127.0.0.1:3000") return true;
+  try {
+    const u = new URL(origin);
+    if (u.hostname.startsWith("chants-506202--") && (u.hostname.endsWith(".web.app") || u.hostname.endsWith(".firebaseapp.com"))) return true;
+  } catch {}
+  return false;
+}
+
 export const backup = onRequest(
   {
     region: "us-central1",
     memory: "256MiB",
     timeoutSeconds: 10,
     concurrency: 40,
-    cors: [
-      "https://chants-506202.web.app",
-      "https://chants-506202.firebaseapp.com",
-      "http://localhost:3000",
-    ],
+    cors: false,
   },
   async (req, res) => {
+    const origin = (req.headers?.origin as string) || "";
+    if (isAllowedCorsOrigin(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Vary", "Origin");
+      res.setHeader("Access-Control-Allow-Methods", "GET,PUT,DELETE,OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Authorization,Content-Type");
+    }
     if (req.method === "OPTIONS") {
       res.status(204).send("");
+      return;
+    }
+    if (origin && !isAllowedCorsOrigin(origin)) {
+      res.status(403).json({ error: "origin not allowed" });
       return;
     }
     const authHeader = (req.headers?.authorization as string) || "";

@@ -9,11 +9,27 @@ if (!admin.apps.length) admin.initializeApp();
 const DISCORD_CLIENT_ID = defineSecret("DISCORD_CLIENT_ID");
 const DISCORD_CLIENT_SECRET = defineSecret("DISCORD_CLIENT_SECRET");
 
+function isAllowedCorsOrigin(origin: string): boolean {
+  if (!origin) return false;
+  if (origin === "https://chants-506202.web.app") return true;
+  if (origin === "https://chants-506202.firebaseapp.com") return true;
+  if (origin === "http://localhost:3000") return true;
+  if (origin === "http://127.0.0.1:3000") return true;
+  try {
+    const u = new URL(origin);
+    if (u.hostname.startsWith("chants-506202--") && (u.hostname.endsWith(".web.app") || u.hostname.endsWith(".firebaseapp.com"))) return true;
+  } catch {}
+  return false;
+}
+
 function getRedirectUri(req: any): string {
   const override = (req.query?.redirect_uri as string) || "";
   if (override) {
     try {
       const u = new URL(override);
+      // Only allow prod + localhost – preview channels must use prod redirect_uri
+      // so Discord (which only whitelists prod) accepts it. The callback page
+      // then postMessages to the preview opener via "*" fallback.
       if (
         u.hostname === "chants-506202.web.app" ||
         u.hostname === "chants-506202.firebaseapp.com" ||
@@ -39,10 +55,17 @@ export const discordAuthCallback = onRequest(
     memory: "256MiB",
     timeoutSeconds: 15,
     concurrency: 40,
-    cors: true,
+    cors: false,
     secrets: [DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET],
   },
   async (req, res) => {
+    const origin = (req.headers?.origin as string) || "";
+    if (isAllowedCorsOrigin(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Vary", "Origin");
+      res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    }
     if (req.method === "OPTIONS") {
       res.status(204).send("");
       return;
