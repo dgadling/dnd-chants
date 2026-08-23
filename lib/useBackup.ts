@@ -39,6 +39,8 @@ export function useBackup(opts: Opts) {
             const uid = (fb as any)?.uid || `discord:${d.discordUser?.id || ""}`;
             const key = await deriveKeyFromPin(pending, uid);
             localStorage.setItem(STORAGE_BACKUP_KEY, await exportKeyToBase64(key));
+            // close Enable dialog right after Discord success, before backup check
+            setUi((p) => ({ ...p, showEnableBackups: false }));
             try {
               const idTok = await getIdToken();
               if (idTok) {
