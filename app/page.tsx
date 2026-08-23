@@ -133,10 +133,15 @@ export default function LabPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [filterText, backup.ui.showEnableBackups, showWelcome, showPrivacy, showHelpConfig, pendingDeleteId, showAddCharacter, drawerOpen, closeWelcome]);
 
-  const onLinkClick = () => {
+  const onLinkClick = async () => {
     const id = extractIdForDisplay(linkInput);
     if (!id) { setLinkStatus("Enter D&D Beyond URL or numeric id"); return; }
-    void fetchCharacter(id);
+    const result = await fetchCharacter(id);
+    if (result) {
+      setShowAddCharacter(false);
+      setLinkInput("");
+      setLinkStatus("");
+    }
   };
 
   const onRefreshClick = () => {
