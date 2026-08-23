@@ -202,6 +202,19 @@ export default function LabPage() {
   // ESC clears filter if open, otherwise existing modal handling via global key handler below
   const clearFilter = useCallback(() => setFilterText(""), []);
 
+  // Cmd-K / Ctrl-K focuses spell filter
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        const el = document.getElementById("spell-filter-input") as HTMLInputElement | null;
+        if (el) el.focus();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   return (
     <div className="min-h-screen antialiased flex bg-app text-primary">
       {drawerOpen ? <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setDrawerOpen(false)} /> : null}
