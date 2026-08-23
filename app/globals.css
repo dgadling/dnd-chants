@@ -48,6 +48,10 @@
   color: var(--text);
   border-color: var(--border);
 }
+.input-field::placeholder {
+  color: var(--text-dim);
+  opacity: 0.7;
+}
 
 /* Theme-aware accent utilities – replaces all isLight ternaries for accent */
 .btn-accent {

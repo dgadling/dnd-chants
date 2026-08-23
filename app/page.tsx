@@ -266,7 +266,7 @@ export default function LabPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => { setShowAddCharacter(false); setLinkInput(""); setLinkStatus(""); }} role="dialog" aria-modal="true">
           <div className="border rounded-xl p-5 max-w-sm w-full shadow-2xl bg-surface border-default" onClick={e=>e.stopPropagation()}>
             <h3 className="text-sm font-semibold mb-3 text-primary">Add Character</h3>
-            <input className="w-full h-10 rounded-lg border px-3 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus-ring-accent input-field" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} placeholder="https://www.dndbeyond.com/characters/12345678 or 12345678" onKeyDown={(e) => { if (e.key === "Enter") onLinkClick(); }} autoFocus />
+            <input className="w-full h-10 rounded-lg border px-3 text-sm placeholder:text-[var(--text-dim)] focus:outline-none focus:ring-2 focus-ring-accent input-field" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} placeholder="https://www.dndbeyond.com/characters/12345678 or 12345678" onKeyDown={(e) => { if (e.key === "Enter") onLinkClick(); }} autoFocus />
             <div className="flex gap-2 mt-3">
               <button onClick={onLinkClick} disabled={isLinking} className="flex-1 rounded-lg text-sm h-10 font-semibold disabled:opacity-60 btn-accent">{isLinking ? "Linking…" : characters.length ? "Add Character" : "Link Character"}</button>
               <button onClick={() => { setShowAddCharacter(false); setLinkInput(""); setLinkStatus(""); }} className="rounded-lg text-sm h-10 px-4 bg-surface bg-surface-hover text-dim">Cancel</button>

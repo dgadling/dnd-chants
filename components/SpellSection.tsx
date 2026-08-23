@@ -122,7 +122,7 @@ export function SpellSection({
         </table>
       </div>
 
-      <div className="md:hidden divide-y divide-zinc-200 border-default">
+      <div className="md:hidden divide-y divide-[var(--border)] bg-surface">
         {activeSpells.length === 0 ? (
           <div className="p-8 text-center text-sm text-dim">No spells in {activeSchool}. Link a character to populate.</div>
         ) : (

@@ -67,7 +67,7 @@ export function DesktopRow(props: Props) {
       <td className="py-2 px-2 text-sm max-w-[16rem] min-w-[10rem] align-middle text-primary">
         <input
           aria-label={`Translation for ${spell.name}`}
-          className="w-full h-8 rounded-md border px-2 text-[13px] focus:outline-none focus:ring-1 focus-ring-accent placeholder:text-zinc-500 input-field"
+          className="w-full h-8 rounded-md border px-2 text-[13px] focus:outline-none focus:ring-1 focus-ring-accent placeholder:text-[var(--text-dim)] input-field"
           value={boxText}
           onChange={(e) => handleBoxChange(e.target.value)}
           placeholder="native [roman]"

@@ -49,7 +49,7 @@ export function MobileCard(props: Props) {
         <span className="text-[11px] uppercase tracking-widest font-semibold text-dim">Try wording</span>
         <input
           aria-label={`Try phrasing for ${spell.name} mobile`}
-          className="w-full rounded-xl border px-3 py-3 text-[15px] placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus-ring-accent input-field"
+          className="w-full rounded-xl border px-3 py-3 text-[15px] placeholder:text-[var(--text-dim)] focus:outline-none focus:ring-2 focus-ring-accent input-field"
           value={input}
           onChange={(e) => handleInputChange(e.target.value)}
           placeholder="e.g. spying eye"
@@ -83,7 +83,7 @@ export function MobileCard(props: Props) {
         <span className="text-[11px] uppercase tracking-widest font-semibold text-dim">Translation</span>
         <input
           aria-label={`Translation for ${spell.name} mobile`}
-          className="w-full rounded-xl border px-3 text-[15px] placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus-ring-accent input-field"
+          className="w-full rounded-xl border px-3 text-[15px] placeholder:text-[var(--text-dim)] focus:outline-none focus:ring-2 focus-ring-accent input-field"
           style={{ height: "44px" }}
           value={boxText}
           onChange={(e) => handleBoxChange(e.target.value)}
