@@ -167,5 +167,74 @@ export function useBackup(opts: Opts) {
     disableBackupsLocal(); try { localStorage.removeItem("dnd-chant-discord-user-v1"); localStorage.removeItem(STORAGE_LAST_CLOUD_ACTION); } catch {} setBusy({ status: "Backups disabled on this device", isBusy: false });
   }, [setUser, setUi]);
 
+  // FE-only auto backup 5s debounce when backupEnabled
+  const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSeenPayloadRef = useRef<string | null>(null);
+  const lastBackedUpPayloadRef = useRef<string | null>(null);
+  const isFirstAutoMountRef = useRef(true);
+
+  useEffect(() => {
+    if (!ui.backupEnabled) return;
+    if (!user.firebase) return;
+    if (busy.isBusy) return;
+    let hasKey = false;
+    try { hasKey = !!localStorage.getItem(STORAGE_BACKUP_KEY); } catch {}
+    if (!hasKey) return;
+
+    let ddbLink: string | null = null;
+    try { ddbLink = localStorage.getItem("dnd-chant-ddb-link-v1"); } catch {}
+    const payload = { ...refs.current.opts, ddbLink };
+    let payloadStr: string;
+    try { payloadStr = JSON.stringify(payload); } catch { return; }
+
+    if (isFirstAutoMountRef.current) {
+      isFirstAutoMountRef.current = false;
+      lastSeenPayloadRef.current = payloadStr;
+      lastBackedUpPayloadRef.current = payloadStr;
+      return;
+    }
+
+    if (payloadStr === lastSeenPayloadRef.current) return;
+    lastSeenPayloadRef.current = payloadStr;
+    if (payloadStr === lastBackedUpPayloadRef.current) return;
+
+    if (autoTimerRef.current) clearTimeout(autoTimerRef.current as any);
+    autoTimerRef.current = setTimeout(async () => {
+      if (busy.isBusy) return;
+      if (!ui.backupEnabled) return;
+      try { if (!localStorage.getItem(STORAGE_BACKUP_KEY)) return; } catch { return; }
+      const uid = (user.firebase as any)?.uid || "";
+      if (!uid) return;
+      try {
+        let freshDdbLink: string | null = null;
+        try { freshDdbLink = localStorage.getItem("dnd-chant-ddb-link-v1"); } catch {}
+        const freshPayload = { ...refs.current.opts, ddbLink: freshDdbLink };
+        const res = await backupToCloud(freshPayload, uid);
+        const now = new Date(res.at || new Date().toISOString());
+        const msg = `Backed up ${res.size ? `${formatBytes(res.size)} at ` : ""}${formatLocalTimestamp(now)}`;
+        setUi((p) => ({ ...p, lastBackupISO: now.toISOString(), lastBackupSize: res.size || null, lastCloudAction: msg }));
+        try { localStorage.setItem(STORAGE_LAST_BACKUP, now.toISOString()); if (res.size) localStorage.setItem(STORAGE_LAST_BACKUP_SIZE, String(res.size)); localStorage.setItem(STORAGE_LAST_CLOUD_ACTION, msg); } catch {}
+        try { lastBackedUpPayloadRef.current = JSON.stringify(freshPayload); } catch { lastBackedUpPayloadRef.current = payloadStr; }
+      } catch {
+        // silent fail for auto backup
+      }
+    }, 5000) as any;
+
+    return () => { if (autoTimerRef.current) clearTimeout(autoTimerRef.current as any); };
+  }, [ui.backupEnabled, user.firebase, opts, busy.isBusy, setUi]);
+
+  // keep lastBackedUp in sync when manual backup succeeds (via ui.lastBackupISO change we already track payload via lastSeen, but update ref on manual backup path)
+  useEffect(() => {
+    // when ui.lastBackupISO changes due to manual backup, treat current payload as backed up
+    if (!ui.lastBackupISO) return;
+    try {
+      let ddbLink: string | null = null;
+      try { ddbLink = localStorage.getItem("dnd-chant-ddb-link-v1"); } catch {}
+      const payload = { ...refs.current.opts, ddbLink };
+      lastBackedUpPayloadRef.current = JSON.stringify(payload);
+      lastSeenPayloadRef.current = lastBackedUpPayloadRef.current;
+    } catch {}
+  }, [ui.lastBackupISO]);
+
   return { user, status: busy.status, isBusy: busy.isBusy, ui, setUi, onEnableBackups, onBackupAction, onDisable, setStatus: (s: string) => setBusy((p) => ({ ...p, status: s })), pinDialog: { open: dlg.open && (dlg.mode === "backup" || dlg.mode === "restore"), mode: dlg.mode as any, resolve: dlg.resolve as any }, setPinDialog: setDlg, confirmRestore: dlg, setConfirmRestore: setDlg };
 }
