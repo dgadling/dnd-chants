@@ -278,18 +278,19 @@ export function Drawer({
         </div>
       </div>
 
-      <div className="px-3 py-3 border-t text-[11px] border-default text-dim">
+      <div className="px-3 py-3 border-t text-[11px] border-default text-dim flex flex-col gap-1">
         <button
           onClick={() => setShowPrivacy(true)}
-          className="text-[11px] underline underline-offset-2 text-dim"
+          className="text-[11px] underline underline-offset-2 text-dim text-left"
         >
           Privacy Policy
         </button>
-        <div>
-          <a href="/how-we-store" className="text-[11px] underline underline-offset-2 text-dim">
-            How we store your data
-          </a>
-        </div>
+        <a href="/how-we-store" className="text-[11px] underline underline-offset-2 text-dim">
+          How we store your data
+        </a>
+        <a href="https://github.com/dgadling/dnd-chants" target="_blank" rel="noopener noreferrer" className="text-[11px] underline underline-offset-2 text-dim">
+          GitHub
+        </a>
       </div>
     </aside>
   );
