@@ -87,6 +87,40 @@ function collectSpells(char: any): DdbSpellEntry[] {
   return out;
 }
 
+function countTotalSpells(char: any): number {
+  const seen = new Set<string>();
+  let n = 0;
+  const add = (defn: any) => {
+    if (!defn) return;
+    const name = (defn.name || "").toString().trim();
+    if (!name) return;
+    const key = name.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    n++;
+  };
+  const classSpells = char.classSpells;
+  if (Array.isArray(classSpells)) {
+    for (const cs of classSpells) {
+      const spells = cs?.spells;
+      if (!Array.isArray(spells)) continue;
+      for (const sp of spells) add(sp?.definition);
+    }
+  }
+  const spellsSection = char.spells;
+  if (spellsSection && typeof spellsSection === "object" && !Array.isArray(spellsSection)) {
+    for (const key of Object.keys(spellsSection)) {
+      const list = (spellsSection as any)[key];
+      if (!Array.isArray(list)) continue;
+      for (const sp of list) add(sp?.definition);
+    }
+  }
+  if (Array.isArray(spellsSection)) {
+    for (const sp of spellsSection) add(sp?.definition || sp);
+  }
+  return n;
+}
+
 async function tryProxyFetch(charId: string): Promise<any | null> {
   // same-origin proxy via Firebase Hosting rewrite -> Functions dndbeyondProxy
   // works on https://chants-506202.web.app and localhost when emulated, not on web artifact preview origin
@@ -121,9 +155,10 @@ export async function fetchCharacterClient(idOrUrl: string): Promise<{
   lastModified: string | null;
   fetchTime: string;
   totalSpells: number;
+  rawTotalSpells: number;
 }> {
   const charId = extractId(idOrUrl);
-  if (!charId) throw new Error("could not extract character id – paste D&D Beyond URL like https://www.dndbeyond.com/characters/12345678 or numeric id");
+  if (!charId) throw new Error("Invalid URL");
 
   // 1. Try same-origin proxy first (avoids CORS)
   try {
@@ -137,6 +172,7 @@ export async function fetchCharacterClient(idOrUrl: string): Promise<{
         lastModified: j.lastModified || null,
         fetchTime: j.fetchTime || new Date().toISOString(),
         totalSpells: j.totalSpells ?? j.spells?.length ?? 0,
+        rawTotalSpells: j.rawTotalSpells ?? j.totalRawSpells ?? j.totalSpells ?? j.spells?.length ?? 0,
       };
     }
   } catch {
@@ -155,14 +191,16 @@ export async function fetchCharacterClient(idOrUrl: string): Promise<{
     });
     if (!res.ok) {
       const txt = await res.text().catch(()=> "");
-      if (res.status === 404) throw new Error("character not found or private – enable public sharing in D&D Beyond");
-      if (res.status === 403) throw new Error("character is private – enable public sharing in D&D Beyond (D&D Beyond blocks direct browser fetch – if this persists you may need a proxy)");
-      throw new Error(`upstream ${res.status}: ${txt.slice(0,400)} – D&D Beyond may block CORS, try again or use proxy`);
+      if (res.status === 404) throw new Error("No character at that URL");
+      if (res.status === 403) throw new Error("That character is private");
+      if (res.status === 500) throw new Error("Our dndbeyond.com proxy is having issues");
+      if (res.status >= 502 && res.status < 600) throw new Error("dndbeyond.com is down or having issues"); throw new Error(`upstream ${res.status}: ${txt.slice(0,400)}`);
     }
     const raw = await res.json() as any;
     const char = raw?.data ?? raw;
     if (!char || !char.name) throw new Error("unexpected upstream shape – no character data");
     const spells = collectSpells(char);
+    const rawTotal = countTotalSpells(char);
     let lastModifiedISO: string | null = null;
     const dm = char.dateModified ?? char.modified ?? char.updatedAt;
     if (typeof dm === "number") {
@@ -178,10 +216,12 @@ export async function fetchCharacterClient(idOrUrl: string): Promise<{
       lastModified: lastModifiedISO,
       fetchTime: new Date().toISOString(),
       totalSpells: spells.length,
+      rawTotalSpells: rawTotal,
     };
   } catch (e: any) {
     const msg = String(e?.message || e);
-    if (msg.includes("aborted") || e?.name === "AbortError") throw new Error("fetch timed out – D&D Beyond character-service slow or unreachable");
+    if (msg.includes("aborted") || e?.name === "AbortError") throw new Error("dndbeyond timed out");
+    if (msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("Load failed")) throw new Error("dndbeyond.com is down or having issues");
     throw new Error(msg.slice(0,400));
   } finally {
     clearTimeout(timer);

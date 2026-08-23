@@ -151,7 +151,7 @@ export function useCharacters(activeSchool?: School, setActiveSchool?: (s: Schoo
     };
     const id = extract(idOrUrl);
     if (!id) {
-      if (!opts.silent) setLinkStatus("Could not parse id – paste URL like https://www.dndbeyond.com/characters/12345678");
+      if (!opts.silent) setLinkStatus("Invalid URL. Check carefully and try again");
       return null;
     }
     setIsLinking(true);
@@ -163,6 +163,18 @@ export function useCharacters(activeSchool?: School, setActiveSchool?: (s: Schoo
       const fetchTime = j.fetchTime || new Date().toISOString();
       const lastMod = j.lastModified || null;
       const charId = j.characterId || id;
+      const rawTotal = (j as any).rawTotalSpells ?? (j as any).totalRawSpells ?? spells.length;
+
+      // Case 2: zero spells total
+      if (rawTotal === 0) {
+        if (!opts.silent) setLinkStatus(`You seem a little too martial for this site (I don't see any spells)`);
+        return null;
+      }
+      // Case 3: has spells but zero verbal
+      if (spells.length === 0 && rawTotal > 0) {
+        if (!opts.silent) setLinkStatus(`While you have ${rawTotal} spell${rawTotal===1?"":"s"}, none of them have verbal components. This site won't do much for you`);
+        return null;
+      }
 
       const base = existingChars || characters;
       setCharacters((prev) => {
@@ -200,7 +212,25 @@ export function useCharacters(activeSchool?: School, setActiveSchool?: (s: Schoo
       }
       return { characterId: charId, characterName: charName, spells };
     } catch (e: any) {
-      if (!opts.silent) setLinkStatus(`Error: ${String(e?.message || e).slice(0, 200)}`);
+      const msg = String(e?.message || e);
+      // Map to user-friendly messages per spec
+      if (msg.includes("could not extract") || msg.includes("Could not parse") || msg.includes("Invalid URL")) {
+        if (!opts.silent) setLinkStatus(`Invalid URL. Check carefully and try again`);
+      } else if (msg.includes("character not found") || msg.includes("404") || msg.includes("No character")) {
+        if (!opts.silent) setLinkStatus(`No character at that URL. Check URL carefully and try again.`);
+      } else if (msg.includes("character is private") || msg.includes("private") || msg.includes("403")) {
+        if (!opts.silent) setLinkStatus(`That character is private. Enable public sharing on dndbeyond and try again.`);
+      } else if (msg.includes("timed out") || msg.includes("504") || msg.includes("dndbeyond timed out")) {
+        if (!opts.silent) setLinkStatus(`dndbeyond timed out. Wait a moment and try again.`);
+      } else if (msg.includes("proxy") || msg.includes("500") || msg.includes("Our dndbeyond.com proxy")) {
+        if (!opts.silent) setLinkStatus(`Our dndbeyond.com proxy is having issues. Wait a moment and try again`);
+      } else if (msg.includes("502") || msg.includes("dndbeyond.com is down") || msg.includes("upstream")) {
+        if (!opts.silent) setLinkStatus(`dndbeyond.com is down or having issues. Wait a moment and try again.`);
+      } else if (msg.includes("could not reach") || msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+        if (!opts.silent) setLinkStatus(`dndbeyond.com is down or having issues. Wait a moment and try again.`);
+      } else {
+        if (!opts.silent) setLinkStatus(`Error: ${msg.slice(0, 200)}`);
+      }
       return null;
     } finally {
       setIsLinking(false);

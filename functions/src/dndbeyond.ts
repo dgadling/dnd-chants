@@ -61,6 +61,28 @@ function collectSpells(char: any): DdbSpellEntry[] {
   return out;
 }
 
+function countTotalSpells(char: any): number {
+  const seen = new Set<string>();
+  let n = 0;
+  const add = (defn: any) => {
+    if (!defn) return;
+    const name = (defn.name || "").toString().trim();
+    if (!name) return;
+    const key = name.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    n++;
+  };
+  if (Array.isArray(char.classSpells))
+    for (const cs of char.classSpells) if (Array.isArray(cs?.spells)) for (const sp of cs.spells) add(sp?.definition);
+  const spellsSection = char.spells;
+  if (spellsSection && typeof spellsSection === "object" && !Array.isArray(spellsSection))
+    for (const k of Object.keys(spellsSection))
+      if (Array.isArray((spellsSection as any)[k])) for (const sp of (spellsSection as any)[k]) add(sp?.definition);
+  if (Array.isArray(spellsSection)) for (const sp of spellsSection) add(sp?.definition || sp);
+  return n;
+}
+
 function extractIdFromRequest(req: any): string | null {
   const rawPath = (req.path as string) || (req.url as string) || "";
   const q = (req.query?.id as string) || (req.query?.characterId as string);
@@ -112,14 +134,14 @@ export const dndbeyondProxy = onRequest(
       if (!upstreamRes.ok) {
         const txt = await upstreamRes.text().catch(() => "");
         if (upstreamRes.status === 404) {
-          res.status(404).json({ error: "character not found or private" });
+          res.status(404).json({ error: "No character at that URL" });
           return;
         }
         if (upstreamRes.status === 403) {
-          res.status(403).json({ error: "character is private" });
+          res.status(403).json({ error: "That character is private" });
           return;
         }
-        res.status(502).json({ error: `upstream ${upstreamRes.status}: ${txt.slice(0, 400)}` });
+        res.status(502).json({ error: "dndbeyond.com is down or having issues" });
         return;
       }
       const raw = (await upstreamRes.json()) as any;
@@ -129,6 +151,7 @@ export const dndbeyondProxy = onRequest(
         return;
       }
       const spells = collectSpells(char);
+      const rawTotal = countTotalSpells(char);
       let lastModifiedISO: string | null = null;
       const dm = char.dateModified ?? char.modified ?? char.updatedAt;
       if (typeof dm === "number") {
@@ -151,14 +174,15 @@ export const dndbeyondProxy = onRequest(
         lastModified: lastModifiedISO,
         fetchTime: new Date().toISOString(),
         totalSpells: spells.length,
+        rawTotalSpells: rawTotal,
       });
     } catch (e: any) {
       const msg = String(e?.message || e);
       if (msg.includes("aborted") || e?.name === "AbortError") {
-        res.status(504).json({ error: "fetch timed out" });
+        res.status(504).json({ error: "dndbeyond timed out" });
         return;
       }
-      res.status(500).json({ error: msg.slice(0, 400) });
+      res.status(500).json({ error: "Our dndbeyond.com proxy is having issues" });
     } finally {
       clearTimeout(timer);
     }
