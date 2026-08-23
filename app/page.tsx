@@ -8,7 +8,6 @@ import { useCharacters } from "@/hooks/useCharacters";
 import { useWelcome } from "@/hooks/useWelcome";
 import { useBackup } from "@/lib/useBackup";
 import { Drawer } from "@/components/Drawer";
-import { SchoolPills } from "@/components/SchoolPills";
 import { SpellSection } from "@/components/SpellSection";
 import { EnableBackupsDialog } from "@/components/EnableBackupsDialog";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
@@ -29,7 +28,7 @@ function extractIdForDisplay(input: string): string | null {
 
 export default function LabPage() {
   const theme = useTheme();
-  const [activeSchool, setActiveSchool] = useState<School>("Evocation");
+  const [filterText, setFilterText] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [showAddCharacter, setShowAddCharacter] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -49,7 +48,20 @@ export default function LabPage() {
     isLinking,
     linkStatus,
     setLinkStatus,
-  } = useCharacters(activeSchool, setActiveSchool);
+  } = useCharacters();
+
+  const filteredGrouped = useMemo(() => {
+    const q = filterText.trim().toLowerCase();
+    if (!q) return grouped;
+    const out: Record<string, typeof spellsArr> = {};
+    for (const s of SCHOOLS) {
+      const list = grouped[s] || [];
+      out[s] = list.filter((sp: any) => sp.name.toLowerCase().includes(q));
+    }
+    return out;
+  }, [grouped, filterText]);
+
+  const hasFilter = filterText.trim().length > 0;
 
   const { showWelcome, closeWelcome, setShowWelcome } = useWelcome();
 
@@ -108,6 +120,7 @@ export default function LabPage() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
+      if (filterText) { setFilterText(""); return; }
       if (backup.ui.showEnableBackups) { backup.setUi((p: any) => ({ ...p, showEnableBackups: false })); return; }
       if (showWelcome) { closeWelcome(); return; }
       if (showPrivacy) { setShowPrivacy(false); return; }
@@ -118,7 +131,7 @@ export default function LabPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [backup.ui.showEnableBackups, showWelcome, showPrivacy, showHelpConfig, pendingDeleteId, showAddCharacter, drawerOpen, closeWelcome]);
+  }, [filterText, backup.ui.showEnableBackups, showWelcome, showPrivacy, showHelpConfig, pendingDeleteId, showAddCharacter, drawerOpen, closeWelcome]);
 
   const onLinkClick = () => {
     const id = extractIdForDisplay(linkInput);
@@ -163,10 +176,8 @@ export default function LabPage() {
 
   const totalVerbal = spellsArr.length;
   const hasChars = characters.length > 0;
-  const activeLangs = activeId ? schoolLangsPerChar[activeId] || {} : {};
-  const activeTargetLang = activeLangs[activeSchool] || (SCHOOL_DEFAULTS[activeSchool] as string) || "en";
-  const activeSpells = grouped[activeSchool] || [];
   const activeExtras = activeId ? extrasPerChar[activeId] || {} : {};
+  const activeLangs = activeId ? schoolLangsPerChar[activeId] || {} : {};
   const characterName = activeCharacter?.characterName || "";
   const lastFetchISO = activeCharacter?.lastFetchISO || "";
   const lastModifiedISO = activeCharacter?.lastModifiedISO || null;
@@ -182,6 +193,9 @@ export default function LabPage() {
       },
     }));
   }, [activeId]);
+
+  // ESC clears filter if open, otherwise existing modal handling via global key handler below
+  const clearFilter = useCallback(() => setFilterText(""), []);
 
   return (
     <div className="min-h-screen antialiased flex bg-app text-primary">
@@ -223,14 +237,31 @@ export default function LabPage() {
         </div>
 
         <main className="flex-1 mx-auto w-full max-w-5xl px-3 py-4 lg:px-6 lg:py-6 pb-10">
-          <header className="mb-5 hidden lg:block">
+          <header className="mb-4 hidden lg:block">
             <h1 className="text-xl md:text-2xl font-bold tracking-tight">🐉 D&D Chants</h1>
             <p className="mt-1 text-[13px] md:text-sm max-w-[34rem] leading-snug text-dim">
               {totalVerbal ? `${totalVerbal} spells grouped by school. ` : ""}Type a new English cue, hit ▶ to translate, 🔊 to hear it.
             </p>
           </header>
 
-          <SchoolPills grouped={grouped} activeSchool={activeSchool} setActiveSchool={setActiveSchool} hasChars={hasChars} />
+          {totalVerbal > 0 ? (
+            <div className="sticky top-[52px] lg:top-0 z-10 -mx-3 lg:mx-0 px-3 lg:px-0 py-2 mb-3 backdrop-blur bg-app/80 border-b lg:border-0 border-default">
+              <div className="relative max-w-[480px]">
+                <input
+                  id="spell-filter-input"
+                  value={filterText}
+                  onChange={(e) => setFilterText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Escape") { if (filterText) setFilterText(""); else (e.target as HTMLInputElement).blur(); } }}
+                  placeholder="Filter spells…"
+                  className="w-full h-10 rounded-lg border pl-9 pr-9 text-sm placeholder:text-[var(--text-dim)] focus:outline-none focus:ring-2 focus-ring-accent input-field"
+                />
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-dim">⌕</span>
+                {filterText ? (
+                  <button onClick={clearFilter} className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 grid place-items-center rounded-md text-dim bg-surface-hover hover:text-primary" aria-label="Clear filter">✕</button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
 
           {totalVerbal === 0 ? (
             !hasChars ? (
@@ -247,17 +278,37 @@ export default function LabPage() {
                 <div className="text-sm max-w-[420px] mx-auto text-dim">Link your D&D Beyond character from the left drawer.</div>
               </div>
             )
+          ) : hasFilter && SCHOOLS.every((s) => (filteredGrouped[s]?.length || 0) === 0) ? (
+            <div className="rounded-xl border p-8 text-center bg-surface border-default">
+              <div className="text-sm font-medium">No spells match “{filterText.trim()}”</div>
+              <button onClick={clearFilter} className="mt-3 text-xs underline text-dim">Clear filter</button>
+            </div>
           ) : (
-            <SpellSection
-              activeSchool={activeSchool}
-              activeSpells={activeSpells as any}
-              activeTargetLang={activeTargetLang}
-              activeId={activeId}
-              activeExtras={activeExtras as any}
-              setSchoolLangsPerChar={setSchoolLangsPerChar}
-              helpTemplate={helpTemplate}
-              handleSave={handleSave}
-            />
+            <div className="flex flex-col gap-5">
+              {SCHOOLS.map((school) => {
+                const spells = filteredGrouped[school] || [];
+                // when filtering, hide empty schools; when not filtering, show all (even empty to keep flavor? hide empty when no filter if zero spells to reduce noise? show if has any spells normally)
+                if (hasFilter && spells.length === 0) return null;
+                if (!hasFilter && (grouped[school]?.length || 0) === 0 && spells.length === 0) {
+                  // still show empty schools when no filter to keep flavor? hide to reduce noise — keep hidden when zero
+                  return null;
+                }
+                const targetLang = activeLangs[school] || (SCHOOL_DEFAULTS[school as School] as string) || "en";
+                return (
+                  <SpellSection
+                    key={school}
+                    activeSchool={school as School}
+                    activeSpells={spells as any}
+                    activeTargetLang={targetLang}
+                    activeId={activeId}
+                    activeExtras={activeExtras as any}
+                    setSchoolLangsPerChar={setSchoolLangsPerChar}
+                    helpTemplate={helpTemplate}
+                    handleSave={handleSave}
+                  />
+                );
+              })}
+            </div>
           )}
         </main>
       </div>
