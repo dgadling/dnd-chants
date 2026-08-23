@@ -28,7 +28,7 @@ type DdbLinkLegacy = {
 
 const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
 
-export function useCharacters(activeSchool: School, setActiveSchool: (s: School) => void) {
+export function useCharacters(activeSchool?: School, setActiveSchool?: (s: School) => void) {
   const [characters, setCharacters] = useState<StoredCharacter[]>([]);
   const [activeId, setActiveId] = useState<string>("");
   const [isLinking, setIsLinking] = useState<boolean>(false);
@@ -110,7 +110,7 @@ export function useCharacters(activeSchool: School, setActiveSchool: (s: School)
           setActiveId(loadedChars[0].characterId);
         }
         const firstWithSpells = SCHOOLS.find((s) => loadedChars[0].spells.some((sp) => sp.school === s));
-        if (firstWithSpells) setActiveSchool(firstWithSpells as School);
+        if (firstWithSpells && setActiveSchool) setActiveSchool(firstWithSpells as School);
 
         const active = loadedChars.find((c) => c.characterId === (loadedActive || loadedChars[0].characterId)) || loadedChars[0];
         if (active?.lastFetchISO) {
@@ -193,7 +193,7 @@ export function useCharacters(activeSchool: School, setActiveSchool: (s: School)
       });
       setActiveId(charId);
       const first = SCHOOLS.find((s) => spells.some((sp) => sp.school === s));
-      if (first) setActiveSchool(first as School);
+      if (first && setActiveSchool) setActiveSchool(first as School);
       if (!opts.silent) {
         setLinkStatus(`Loaded ${charName ? charName + " – " : ""}${spells.length} verbal spells`);
         setTimeout(() => setLinkStatus(""), 2500);
@@ -214,7 +214,7 @@ export function useCharacters(activeSchool: School, setActiveSchool: (s: School)
   const onSwitch = (cid: string) => {
     setActiveId(cid);
     const c = characters.find((ch) => ch.characterId === cid);
-    if (c) {
+    if (c && setActiveSchool) {
       const first = SCHOOLS.find((s) => c.spells.some((sp) => sp.school === s));
       if (first) setActiveSchool(first as School);
     }
