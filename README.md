@@ -1,66 +1,25 @@
 # dnd-chants
 
-Generic D&D chant lab – no static spell list. Spells are generated per-character when linking D&D Beyond sheets.
+dnd-chants is a web app where you link your D&D Beyond characters and write a short spoken chant for each spell in 104 languages.
 
-## Stack
-- Next.js 14 App Router + TS + Tailwind
-- Pages: `/` lab (empty until D&D Beyond linked), `/api/health`, `/api/translate`, `/api/tts`
-- `lib/lang.ts` 111 languages + TTS mapping, generic (no school→language defaults)
-- Translate: Google translate single API (gtx) primary 3s abort, v2 fallback, romanization from seg[2]
-- TTS: Google translate_tts proxy
-- DesktopRow / MobileCard with audio 🔊 and idiom 💬
+## What it does
 
-## Local dev
+You get your spells grouped by school and you write a chant for each one. You can translate it, hear how it sounds, and look up idioms when you are stuck. Everything lives in your browser by default. If you want it on another device you can turn on encrypted cloud backup.
 
-```bash
-cp .env.example .env.local
-# edit GOOGLE_TRANSLATE_API_KEY
-bun install
-bun run dev
-# http://localhost:3000
-```
+## How to use it
 
-Build:
+Paste a D&D Beyond link like `https://www.dndbeyond.com/characters/12345678` or just the id `12345678` in Add Character. Your characters show up in the left sidebar on desktop and as an overlay on mobile. Each row shows the name and how many spells it has and a link back to D&D Beyond. Click a row to switch characters. The active one expands to show when it was fetched and when the sheet changed, plus a Refresh button.
 
-```bash
-bun run build
-bun run start -p 8080
-```
+Pills across the top show schools and how many spells are in each. Empty schools look dimmed but you can still click them. If you have no characters yet all pills look dimmed.
 
-## Env
+Each school has a language picker. Each spell has translate and audio buttons and an editable box that looks like `native [pronunciation]`. That is the spell text in another language with how it sounds in brackets, like Hebrew with English letters. For example `שלום [shalom]`. The app saves automatically in this browser as you type.
 
-`.env.example`:
-```
-GOOGLE_TRANSLATE_API_KEY=
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
+Until you add a character sheet you'll see a short tutorial. The first time you visit you also get a welcome modal. You can pick Auto, Light, or Dark for appearance.
 
-`GOOGLE_TRANSLATE_API_KEY` optional – without it app uses gtx primary.
+## Backup / restore
 
-## Pages
+Discord is only used to log you in. We cannot see your messages or servers or anything like that. You pick a 6-digit PIN and the app encrypts everything before it ever leaves your browser. The server only ever sees encrypted data and can't read your chants.
 
-- `/` generic – no static spells. Shows "No spells yet – link your D&D Beyond character". Future: D&D Beyond linking will populate spells by school, per-character. Each spell has chant box native [roman], language selector, translate, audio 🔊, idiom 💬, save to localStorage
-- `/api/health` `{ok:true}`
-- `/api/translate` POST `{text, source, target}` gtx + v2 fallback
-- `/api/tts` GET `?text=&target=` audio/mpeg
+The drawer shows your last action like Backed up or Restored with the size and the local time.
 
-## Idiom search
-
-`idiom in ${langName} for "${englishTry}"` → `window.open('https://www.google.com/search?q='+...)`
-
-## Future: D&D Beyond linking
-
-- Paste D&D Beyond URL or upload JSON
-- Parse raw JSON for spell list
-- Intersect with verbal-only spells, populate per-school tabs
-- No raw DDB JSON stored in repo, only spell names per user session
-- Chant data keyed by spell name + lang, stored per user (localStorage now, DB later after Discord auth)
-
-## Files
-
-- `app/globals.css`, `tailwind.config.js`, `tsconfig.json`
-- `Dockerfile` oven/bun:1.3 multi-stage
-- `cloudbuild.yaml` Artifact Registry us-central1-docker.pkg.dev/chants-506202/dnd-chants/dnd-chants
-
-## License
-See LICENSE.
+You can disable backups or delete the cloud copy from the drawer.
