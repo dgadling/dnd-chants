@@ -1,6 +1,7 @@
 "use client";
 
 import { useSpellRow } from "@/hooks/useSpellRow";
+import { MAX_TRANS_ERROR_LEN_MOBILE } from "@/lib/constants";
 
 type Spell = {
   name: string;
@@ -75,7 +76,7 @@ export function MobileCard(props: Props) {
       </button>
       {transError && (
         <div className="text-xs text-red-400 px-1" title={transError}>
-          Translation error: {transError.slice(0, 120)} – check key / try again
+          Translation error: {transError.slice(0, MAX_TRANS_ERROR_LEN_MOBILE)} – check key / try again
         </div>
       )}
 

@@ -21,6 +21,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { GetStarted, NoSpellsEmpty, NoMatchEmpty } from "@/components/EmptyStates";
 import { SpellList } from "@/components/SpellList";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
+import { MAX_ENGLISH_PHRASE_LEN, MAX_CHANT_BOX_LEN } from "@/lib/constants";
 import { extractCharacterId as extractIdForDisplay } from "@/lib/extractCharacterId";
 
 const DEFAULT_HELP_TEMPLATE =
@@ -193,7 +194,7 @@ export default function LabPage() {
       ...prev,
       [activeId]: {
         ...(prev[activeId] || {}),
-        [spellName]: { englishPhrase: englishPhrase.slice(0, 500), box: box.slice(0, 1100) },
+        [spellName]: { englishPhrase: englishPhrase.slice(0, MAX_ENGLISH_PHRASE_LEN), box: box.slice(0, MAX_CHANT_BOX_LEN) },
       },
     }));
   }, [activeId]);

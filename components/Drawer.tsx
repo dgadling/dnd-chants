@@ -1,6 +1,7 @@
 "use client";
 import { useTheme } from "@/lib/useTheme";
 import { formatBytes, formatLocalTimestamp } from "@/lib/backup";
+import { DRAWER_WIDTH_MOBILE, DRAWER_WIDTH_DESKTOP } from "@/lib/constants";
 
 type StoredCharacter = {
   characterId: string;
@@ -67,11 +68,15 @@ export function Drawer({
   const theme = useTheme();
 
   return (
-    <aside
-      className={`fixed inset-y-0 left-0 z-40 w-[300px] max-w-[85vw] border-r flex flex-col transform transition-transform duration-200 lg:translate-x-0 lg:static lg:w-[240px] lg:max-w-none lg:shrink-0 ${
-        drawerOpen ? "translate-x-0" : "-translate-x-full"
-      } bg-surface border-default text-primary`}
-    >
+    <>
+      <style>{`@media(min-width:1024px){aside[data-drawer]{width:${DRAWER_WIDTH_DESKTOP}px !important}}`}</style>
+      <aside
+        data-drawer
+        style={{ width: DRAWER_WIDTH_MOBILE }}
+        className={`fixed inset-y-0 left-0 z-40 max-w-[85vw] border-r flex flex-col transform transition-transform duration-200 lg:translate-x-0 lg:static lg:max-w-none lg:shrink-0 lg:w-[240px] ${
+          drawerOpen ? "translate-x-0" : "-translate-x-full"
+        } bg-surface border-default text-primary`}
+      >
       <div className="flex items-center justify-between px-4 py-3.5 border-b shrink-0 border-default">
         <div className="flex items-center gap-2 min-w-0">
           <div className={`h-7 w-7 rounded-lg grid place-items-center font-bold text-[13px] bg-accent`}>D</div>
@@ -293,5 +298,6 @@ export function Drawer({
         </a>
       </div>
     </aside>
+    </>
   );
 }

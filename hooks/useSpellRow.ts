@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatBox, parseBox, getLangName } from "@/lib/lang";
+import { MAX_ENGLISH_PHRASE_LEN, MAX_NATIVE_LEN, MAX_ROMAN_LEN, TRANS_ERROR_MAX_LEN, MAX_BOX_INPUT_LEN } from "@/lib/constants";
 import { playCachedAudio } from "@/lib/audio";
 import { translateClient } from "@/lib/translate-client";
 
@@ -57,9 +58,9 @@ export function useSpellRow({
   const autosave = useCallback(
     (enPhrase: string, nat: string, rom: string) => {
       if (!onSave) return;
-      const ep = enPhrase.trim().slice(0, 500);
-      const n = nat.slice(0, 1000);
-      const r = rom.slice(0, 1000);
+      const ep = enPhrase.trim().slice(0, MAX_ENGLISH_PHRASE_LEN);
+      const n = nat.slice(0, MAX_BOX_INPUT_LEN);
+      const r = rom.slice(0, MAX_BOX_INPUT_LEN);
       if (!ep && !n) return;
       onSave(ep, n, r);
     },
@@ -92,15 +93,15 @@ export function useSpellRow({
     setTransError("");
     try {
       const j = await translateClient("en", targetLang, trimmed);
-      const newNative = (j.translated as string || "").slice(0, 500);
-      const newRoman = (j.romanized as string || "").slice(0, 500);
+      const newNative = (j.translated as string || "").slice(0, MAX_NATIVE_LEN);
+      const newRoman = (j.romanized as string || "").slice(0, MAX_ROMAN_LEN);
       const formatted = formatBox(newNative, newRoman);
       setBoxText(formatted);
       autosave(trimmed, newNative, newRoman);
       lastTranslatedRef.current = norm;
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      setTransError(msg.slice(0, 80));
+      setTransError(msg.slice(0, TRANS_ERROR_MAX_LEN));
     } finally {
       setIsTranslating(false);
     }

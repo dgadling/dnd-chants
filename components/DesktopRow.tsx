@@ -1,6 +1,7 @@
 "use client";
 
 import { useSpellRow } from "@/hooks/useSpellRow";
+import { TRANS_ERROR_MAX_LEN } from "@/lib/constants";
 
 type Spell = {
   name: string;
@@ -74,7 +75,7 @@ export function DesktopRow(props: Props) {
         />
         {transError ? (
           <div className="mt-1 text-[11px] text-red-400 truncate" title={transError}>
-            error: {transError.slice(0, 80)}
+            error: {transError.slice(0, TRANS_ERROR_MAX_LEN)}
           </div>
         ) : null}
       </td>

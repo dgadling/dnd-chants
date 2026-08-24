@@ -1,0 +1,11 @@
+export const MAX_ENGLISH_PHRASE_LEN = 500;
+export const MAX_CHANT_BOX_LEN = 1100;
+export const TRANS_ERROR_MAX_LEN = 80;
+export const DRAWER_WIDTH_MOBILE = 300;
+export const DRAWER_WIDTH_DESKTOP = 240;
+export const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+export const MAX_NATIVE_LEN = 500;
+export const MAX_ROMAN_LEN = 500;
+export const MAX_BOX_INPUT_LEN = 1000;
+export const MAX_TRANSLATE_INPUT_LEN = 500;
+export const MAX_TRANS_ERROR_LEN_MOBILE = 120;

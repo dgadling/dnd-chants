@@ -1,5 +1,6 @@
 /* client-side translate – gtx only, no API key, TTL 24h LRU MAX 500, static-safe */
 import { getGoogleTl } from "./lang";
+import { MAX_TRANSLATE_INPUT_LEN, MAX_NATIVE_LEN, MAX_ROMAN_LEN } from "./constants";
 
 type CacheEntry = { translated: string; romanized: string; targetUsed: string; at: number };
 const cache = new Map<string, CacheEntry>();
@@ -34,7 +35,7 @@ function isLatin(s: string): boolean {
 }
 
 export async function translateClient(source: string, targetRaw: string, text: string): Promise<{ translated: string; romanized: string; targetUsed: string; cached?: boolean }> {
-  const trimmed = text.trim().slice(0, 500);
+  const trimmed = text.trim().slice(0, MAX_TRANSLATE_INPUT_LEN);
   if (!trimmed) throw new Error("text required");
   const src = (source || "en").toLowerCase().trim() || "en";
   const targetRawLc = (targetRaw || "ru").toLowerCase().trim() || "ru";
@@ -97,8 +98,8 @@ export async function translateClient(source: string, targetRaw: string, text: s
       }
       if (cand) romanOut += cand + " ";
     }
-    nativeOut = nativeOut.trim().replace(/\s+/g, " ").slice(0, 500);
-    romanOut = romanOut.trim().replace(/\s+/g, " ").slice(0, 500);
+    nativeOut = nativeOut.trim().replace(/\s+/g, " ").slice(0, MAX_NATIVE_LEN);
+    romanOut = romanOut.trim().replace(/\s+/g, " ").slice(0, MAX_ROMAN_LEN);
     if (!nativeOut) throw new Error("gtx empty native");
     if (romanOut && romanOut.toLowerCase() === nativeOut.toLowerCase()) romanOut = "";
     evictExpired();

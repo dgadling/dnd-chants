@@ -5,6 +5,7 @@ import type { School } from "@/lib/lang";
 import { fetchCharacterClient } from "@/lib/dndbeyond-client";
 import { STORAGE_KEYS, STORAGE_LINK_LEGACY } from "@/lib/storage-keys";
 import { extractCharacterId } from "@/lib/extractCharacterId";
+import { FOUR_HOURS_MS } from "@/lib/constants";
 
 export type Spell = {
   name: string;
@@ -26,8 +27,6 @@ type DdbLinkLegacy = {
   lastModifiedISO?: string | null;
   spells: Spell[];
 };
-
-const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
 
 export function useCharacters(activeSchool?: School, setActiveSchool?: (s: School) => void) {
   const [characters, setCharacters] = useState<StoredCharacter[]>([]);
