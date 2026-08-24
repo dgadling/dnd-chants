@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { SCHOOLS } from "@/lib/lang";
 import type { School } from "@/lib/lang";
 import { fetchCharacterClient } from "@/lib/dndbeyond-client";
-import { STORAGE_KEYS, STORAGE_LINK_LEGACY } from "@/lib/storage-keys";
+import { STORAGE_KEYS } from "@/lib/storage-keys";
 import { extractCharacterId } from "@/lib/extractCharacterId";
 import { FOUR_HOURS_MS } from "@/lib/constants";
 
@@ -78,7 +78,7 @@ export function useCharacters(activeSchool?: School, setActiveSchool?: (s: Schoo
       }
 
       if (!loadedChars.length) {
-        const rawLink = localStorage.getItem(STORAGE_LINK_LEGACY);
+        const rawLink = localStorage.getItem(STORAGE_KEYS.DDB_LINK);
         if (rawLink) {
           try {
             const parsed = JSON.parse(rawLink) as DdbLinkLegacy;

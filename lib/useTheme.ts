@@ -1,10 +1,11 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { STORAGE_KEYS } from "./storage-keys";
 
 export type ThemePref = "auto" | "light" | "dark";
 export type ResolvedTheme = "light" | "dark";
 
-const STORAGE = "dnd-chant-theme-v1";
+const STORAGE = STORAGE_KEYS.THEME;
 const THEME_CHANGE_EVENT = "dnd-chant-theme-change";
 
 function getSystem(): ResolvedTheme {
