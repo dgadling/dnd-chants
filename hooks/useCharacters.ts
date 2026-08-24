@@ -4,6 +4,7 @@ import { SCHOOLS } from "@/lib/lang";
 import type { School } from "@/lib/lang";
 import { fetchCharacterClient } from "@/lib/dndbeyond-client";
 import { STORAGE_KEYS, STORAGE_LINK_LEGACY } from "@/lib/storage-keys";
+import { extractCharacterId } from "@/lib/extractCharacterId";
 
 export type Spell = {
   name: string;
@@ -140,16 +141,7 @@ export function useCharacters(activeSchool?: School, setActiveSchool?: (s: Schoo
   }, [activeId]);
 
   const fetchCharacterInternal = async (idOrUrl: string, opts: { silent?: boolean } = {}, existingChars?: StoredCharacter[]) => {
-    const extract = (s: string) => {
-      const t = (s || "").trim();
-      if (/^\d+$/.test(t)) return t;
-      const m = t.match(/characters\/(\d{2,})/i);
-      if (m) return m[1];
-      const m2 = t.match(/(\d{5,})/);
-      if (m2) return m2[1];
-      return null;
-    };
-    const id = extract(idOrUrl);
+    const id = extractCharacterId(idOrUrl);
     if (!id) {
       if (!opts.silent) setLinkStatus("Invalid URL. Check carefully and try again");
       return null;

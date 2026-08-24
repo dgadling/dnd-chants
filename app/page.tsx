@@ -21,20 +21,10 @@ import { PageHeader } from "@/components/PageHeader";
 import { GetStarted, NoSpellsEmpty, NoMatchEmpty } from "@/components/EmptyStates";
 import { SpellList } from "@/components/SpellList";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
+import { extractCharacterId as extractIdForDisplay } from "@/lib/extractCharacterId";
 
 const DEFAULT_HELP_TEMPLATE =
   "Help me come up with a short chant or idiom for the Dungeons & Dragons spell {spell} in {language} that would sound reasonable to a native speaker.";
-
-function extractIdForDisplay(input: string): string | null {
-  const s = (input || "").trim();
-  if (!s) return null;
-  if (/^\d+$/.test(s)) return s;
-  const m = s.match(/characters\/(\d{2,})/i);
-  if (m) return m[1];
-  const m2 = s.match(/(\d{5,})/);
-  if (m2) return m2[1];
-  return null;
-}
 
 export default function LabPage() {
   useTheme();

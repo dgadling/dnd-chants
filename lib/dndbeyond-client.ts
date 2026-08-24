@@ -1,4 +1,5 @@
 /* client-side DDB fetching – prefers same-origin /api/dndbeyond proxy (Firebase Functions) to avoid CORS, fallback to direct */
+import { extractCharacterId } from "./extractCharacterId";
 export type DdbSpellEntry = {
   name: string;
   school: string;
@@ -17,15 +18,9 @@ const SCHOOL_BY_ID: Record<number, string> = {
 };
 
 export function extractId(input: string): string | null {
-  const s = (input || "").trim();
-  if (!s) return null;
-  if (/^\d+$/.test(s)) return s;
-  const m = s.match(/characters\/(\d{2,})/i);
-  if (m) return m[1];
-  const m2 = s.match(/(\d{5,})/);
-  if (m2) return m2[1];
-  return null;
+  return extractCharacterId(input);
 }
+export { extractCharacterId };
 
 function normalizeSchool(raw: any): string {
   if (!raw) return "Evocation";
