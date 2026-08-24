@@ -1,19 +1,19 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { SCHOOL_BY_ID } from "./lib/schools";
 
-function normalizeSchool(raw: any): string {
-  if (!raw) return "Evocation";
+function normalizeSchool(raw: unknown): string | null {
+  if (!raw) return null;
   if (typeof raw === "string") {
-    const known = Object.values(SCHOOL_BY_ID);
+    const known = Object.values(SCHOOL_BY_ID) as string[];
     if (known.includes(raw)) return raw;
     const cap = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
     if (known.includes(cap)) return cap;
     const num = Number(raw);
-    if (!isNaN(num) && SCHOOL_BY_ID[num]) return SCHOOL_BY_ID[num];
-    return "Evocation";
+    if (!isNaN(num) && SCHOOL_BY_ID[num as keyof typeof SCHOOL_BY_ID]) return SCHOOL_BY_ID[num as keyof typeof SCHOOL_BY_ID];
+    return null;
   }
-  if (typeof raw === "number" && SCHOOL_BY_ID[raw]) return SCHOOL_BY_ID[raw];
-  return "Evocation";
+  if (typeof raw === "number" && SCHOOL_BY_ID[raw as keyof typeof SCHOOL_BY_ID]) return SCHOOL_BY_ID[raw as keyof typeof SCHOOL_BY_ID];
+  return null;
 }
 
 function hasVerbal(defn: any): boolean {
@@ -34,9 +34,11 @@ function collectSpells(char: any): DdbSpellEntry[] {
     if (!name) return;
     if (seen.has(name.toLowerCase())) return;
     seen.add(name.toLowerCase());
+    const school = normalizeSchool(defn.school);
+    if (!school) return;
     out.push({
       name,
-      school: normalizeSchool(defn.school),
+      school,
       level: typeof defn.level === "number" ? defn.level : 0,
     });
   };
