@@ -38,7 +38,9 @@ export default function LabPage() {
 
   const {
     characters,
+    setCharacters,
     activeId,
+    setActiveId,
     activeCharacter,
     spellsArr,
     grouped,
@@ -159,21 +161,21 @@ export default function LabPage() {
     if (!cid) return;
     const idx = characters.findIndex((c: any) => c.characterId === cid);
     const newChars = characters.filter((c: any) => c.characterId !== cid);
-    try { localStorage.setItem(STORAGE_KEYS.CHARACTERS, JSON.stringify(newChars)); } catch {}
+    setCharacters(newChars);
     setExtrasPerChar((prev) => { const cp = { ...prev }; delete cp[cid]; return cp; });
     setSchoolLangsPerChar((prev) => { const cp = { ...prev }; delete cp[cid]; return cp; });
     if (activeId === cid) {
       if (newChars.length) {
         const next = newChars[Math.min(idx, newChars.length - 1)];
-        try { localStorage.setItem(STORAGE_KEYS.ACTIVE_ID, next.characterId); } catch {}
+        setActiveId(next.characterId);
       } else {
+        setActiveId("");
         try { localStorage.removeItem(STORAGE_KEYS.ACTIVE_ID); } catch {}
       }
-      window.location.reload();
-      return;
+    } else if (newChars.length === 0) {
+      try { localStorage.removeItem(STORAGE_KEYS.ACTIVE_ID); } catch {}
     }
-    if (newChars.length === 0) { try { localStorage.removeItem(STORAGE_KEYS.ACTIVE_ID); } catch {} }
-    window.location.reload();
+    setPendingDeleteId(null);
   };
 
   const totalVerbal = spellsArr.length;
