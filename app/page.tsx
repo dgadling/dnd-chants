@@ -138,7 +138,7 @@ export default function LabPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [filterText, backup.ui.showEnableBackups, showWelcome, showPrivacy, showHelpConfig, pendingDeleteId, showAddCharacter, drawerOpen, closeWelcome]);
+  }, [filterText, backup, backup.ui.showEnableBackups, showWelcome, showPrivacy, showHelpConfig, pendingDeleteId, showAddCharacter, drawerOpen, closeWelcome, setLinkStatus]);
 
   const onLinkClick = async () => {
     const id = extractIdForDisplay(linkInput);

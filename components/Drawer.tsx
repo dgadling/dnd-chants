@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useTheme } from "@/lib/useTheme";
 import { formatBytes, formatLocalTimestamp } from "@/lib/backup";
 import { DRAWER_WIDTH_MOBILE, DRAWER_WIDTH_DESKTOP } from "@/lib/constants";
@@ -226,9 +227,12 @@ export function Drawer({
                 {backup.user.discord ? (
                   <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg border bg-surface border-default">
                     {backup.user.discord.avatar ? (
-                      <img
+                      <Image
                         src={`https://cdn.discordapp.com/avatars/${backup.user.discord.id}/${backup.user.discord.avatar}.png?size=64`}
                         alt={backup.user.discord.username || "Discord"}
+                        width={24}
+                        height={24}
+                        unoptimized
                         className="h-6 w-6 rounded-full object-cover shrink-0"
                       />
                     ) : (
