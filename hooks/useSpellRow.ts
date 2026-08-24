@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatBox, parseBox, getLangName } from "@/lib/lang";
 import { MAX_ENGLISH_PHRASE_LEN, MAX_NATIVE_LEN, MAX_ROMAN_LEN, TRANS_ERROR_MAX_LEN, MAX_BOX_INPUT_LEN } from "@/lib/constants";
 import { playCachedAudio } from "@/lib/audio";
@@ -57,7 +57,7 @@ export function useSpellRow({
     };
   }, []);
 
-  const parsed = parseBox(boxText);
+  const parsed = useMemo(() => parseBox(boxText), [boxText]);
   const effectiveNative = parsed.native;
   const effectiveRoman = parsed.roman;
   const langName = getLangName(targetLang);
