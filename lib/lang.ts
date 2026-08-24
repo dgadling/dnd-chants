@@ -12,7 +12,7 @@ export const SCHOOLS = [
 export type School = (typeof SCHOOLS)[number];
 
 export const SCHOOL_DEFAULTS: Record<School, string> = {
-  Abjuration: "iw",
+  Abjuration: "he",
   Conjuration: "is",
   Divination: "hi",
   Enchantment: "it",
