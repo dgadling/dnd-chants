@@ -92,20 +92,20 @@ async function proxyTl(tl: string, q: string): Promise<Blob | null> {
   finally { clearTimeout(t); }
 }
 
-export async function playCachedAudio(text: string, lang: string) {
-  if (!isClient()) return;
+export async function playCachedAudio(text: string, lang: string): Promise<boolean> {
+  if (!isClient()) return false;
   const tr = text.trim().slice(0, 200);
-  if (!tr) return;
+  if (!tr) return false;
   const { getGoogleTl, getSpeechLang } = await import("./lang");
   const tl = getGoogleTl(lang) || lang;
   const key = `${tl}|${tr.toLowerCase()}`;
   cancelCurrentAudio();
 
   const m = memGet(key);
-  if (m) { try { await playOne(m); return; } catch {} }
+  if (m) { try { await playOne(m); return true; } catch {} }
 
   const idb = await idbGet(key);
-  if (idb) { memSet(key, idb); try { await playOne(idb); return; } catch {} }
+  if (idb) { memSet(key, idb); try { await playOne(idb); return true; } catch {} }
 
   try {
     const bl = await proxyTl(tl, tr);
@@ -114,7 +114,7 @@ export async function playCachedAudio(text: string, lang: string) {
       memSet(key, du);
       void idbSet(key, du);
       await playOne(du);
-      return;
+      return true;
     }
   } catch {}
 
@@ -123,6 +123,8 @@ export async function playCachedAudio(text: string, lang: string) {
       const u = new SpeechSynthesisUtterance(tr);
       u.lang = getSpeechLang(lang);
       window.speechSynthesis.speak(u);
+      return true;
     }
   } catch {}
+  return false;
 }

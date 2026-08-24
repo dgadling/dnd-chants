@@ -1,11 +1,11 @@
-/* client-side translate – gtx only, no API key, TTL 24h LRU MAX 500, static-safe */
+/* client-side translate – gtx only, no API key, TTL 5min LRU MAX 100, static-safe */
 import { getGoogleTl } from "./lang";
 import { MAX_TRANSLATE_INPUT_LEN, MAX_NATIVE_LEN, MAX_ROMAN_LEN } from "./constants";
 
 type CacheEntry = { translated: string; romanized: string; targetUsed: string; at: number };
 const cache = new Map<string, CacheEntry>();
-const MAX_CACHE = 500;
-const TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_CACHE = 100;
+const TTL_MS = 5 * 60 * 1000;
 
 function cacheKey(source: string, target: string, lowerOrig: string) {
   return `${source}|${target}|${lowerOrig}`;
