@@ -1,5 +1,6 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { SCHOOL_BY_ID } from "./lib/schools";
+import { isAllowedCorsOrigin } from "./lib/isAllowedOrigin";
 
 function normalizeSchool(raw: unknown): string | null {
   if (!raw) return null;
@@ -94,15 +95,22 @@ export const dndbeyondProxy = onRequest(
     memory: "256MiB",
     timeoutSeconds: 15,
     concurrency: 40,
-    cors: [
-      "https://chants-506202.web.app",
-      "https://chants-506202.firebaseapp.com",
-      "http://localhost:3000",
-    ],
+    cors: false,
   },
   async (req, res) => {
+    const origin = (req.headers?.origin as string) || "";
+    if (isAllowedCorsOrigin(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Vary", "Origin");
+      res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    }
     if (req.method === "OPTIONS") {
       res.status(204).send("");
+      return;
+    }
+    if (origin && !isAllowedCorsOrigin(origin)) {
+      res.status(403).json({ error: "origin not allowed" });
       return;
     }
     const charId = extractIdFromRequest(req);
