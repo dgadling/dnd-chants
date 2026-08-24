@@ -37,6 +37,7 @@ export function useSpellRow({
   const [isTranslating, setIsTranslating] = useState(false);
   const [transError, setTransError] = useState("");
   const lastTranslatedRef = useRef("");
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (initialInput) {
@@ -49,6 +50,12 @@ export function useSpellRow({
       setBoxText((prev) => (!prev.trim() ? formatBox(initialNative, initialRoman) : prev));
     }
   }, [initialNative, initialRoman]);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
 
   const parsed = parseBox(boxText);
   const effectiveNative = parsed.native;
@@ -67,21 +74,31 @@ export function useSpellRow({
     [onSave]
   );
 
+  const autosaveDebounced = useCallback(
+    (enPhrase: string, nat: string, rom: string) => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        autosave(enPhrase, nat, rom);
+      }, 300);
+    },
+    [autosave]
+  );
+
   const handleInputChange = useCallback(
     (v: string) => {
       setInput(v);
-      autosave(v, effectiveNative, effectiveRoman);
+      autosaveDebounced(v, effectiveNative, effectiveRoman);
     },
-    [autosave, effectiveNative, effectiveRoman]
+    [autosaveDebounced, effectiveNative, effectiveRoman]
   );
 
   const handleBoxChange = useCallback(
     (v: string) => {
       setBoxText(v);
       const p = parseBox(v);
-      autosave(input, p.native, p.roman);
+      autosaveDebounced(input, p.native, p.roman);
     },
-    [autosave, input]
+    [autosaveDebounced, input]
   );
 
   const handleTranslate = useCallback(async () => {
