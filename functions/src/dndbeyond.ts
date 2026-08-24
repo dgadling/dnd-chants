@@ -1,15 +1,5 @@
 import { onRequest } from "firebase-functions/v2/https";
-
-const SCHOOL_BY_ID: Record<number, string> = {
-  1: "Abjuration",
-  2: "Conjuration",
-  3: "Divination",
-  4: "Enchantment",
-  5: "Evocation",
-  6: "Illusion",
-  7: "Necromancy",
-  8: "Transmutation",
-};
+import { SCHOOL_BY_ID } from "./lib/schools";
 
 function normalizeSchool(raw: any): string {
   if (!raw) return "Evocation";
