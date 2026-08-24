@@ -120,6 +120,12 @@ export default function LabPage() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        const el = document.getElementById("spell-filter-input") as HTMLInputElement | null;
+        if (el) el.focus();
+        return;
+      }
       if (e.key !== "Escape") return;
       if (filterText) { setFilterText(""); return; }
       if (backup.ui.showEnableBackups) { backup.setUi((p: any) => ({ ...p, showEnableBackups: false })); return; }

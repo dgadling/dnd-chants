@@ -1,5 +1,4 @@
 "use client";
-import { useEffect } from "react";
 
 type Props = {
   filterText: string;
@@ -8,18 +7,6 @@ type Props = {
 };
 
 export function SpellFilterBar({ filterText, setFilterText, clearFilter }: Props) {
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        const el = document.getElementById("spell-filter-input") as HTMLInputElement | null;
-        if (el) el.focus();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, []);
-
   return (
     <div className="relative max-w-[480px]">
       <input
