@@ -42,9 +42,12 @@ export function useDiscordAuth() {
               if (c?.discordId) restored = { id: String(c.discordId), username: String(c.discordUsername || ""), avatar: (c.discordAvatar as string) || null };
             } catch {}
           }
+          const fallbackDiscord = fb.uid?.startsWith("discord:")
+            ? { id: fb.uid.slice(8), username: (restored as any)?.username || "", avatar: (restored as any)?.avatar || null }
+            : null;
           setUser((p) => ({
             firebase: fb,
-            discord: p.discord || restored || (fb.uid?.startsWith("discord:") ? { id: fb.uid.slice(8), username: restored?.username || "", avatar: restored?.avatar || null } : null),
+            discord: p.discord || restored || fallbackDiscord,
           }));
           if (restored) {
             try { localStorage.setItem(STORAGE_KEYS.DISCORD_USER, JSON.stringify(restored)); } catch {}
