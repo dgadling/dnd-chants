@@ -63,6 +63,7 @@ export function useBackupActions(params: {
         if (Array.isArray((data as any).characters)) localStorage.setItem(STORAGE_KEYS.CHARACTERS, JSON.stringify((data as any).characters));
         if ((data as any).schoolLangsPerChar) localStorage.setItem(STORAGE_KEYS.SCHOOL_LANGS, JSON.stringify((data as any).schoolLangsPerChar));
         if ((data as any).extrasPerChar) localStorage.setItem(STORAGE_KEYS.EXTRAS, JSON.stringify((data as any).extrasPerChar));
+        if ((data as any).randomPerChar) localStorage.setItem(STORAGE_KEYS.RANDOM, JSON.stringify((data as any).randomPerChar));
         if (typeof (data as any).activeId === "string") localStorage.setItem(STORAGE_KEYS.ACTIVE_ID, (data as any).activeId);
         if (typeof (data as any).helpTemplate === "string") localStorage.setItem(STORAGE_KEYS.HELP_TEMPLATE, (data as any).helpTemplate);
         if ((data as any).ddbLink) try { localStorage.setItem(STORAGE_KEYS.DDB_LINK, (data as any).ddbLink); } catch {}
