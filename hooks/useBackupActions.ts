@@ -4,6 +4,7 @@ import { getIdToken, signOutFirebase } from "@/lib/firebase-client";
 import { deriveKeyFromPin, exportKeyToBase64, importKeyFromBase64, STORAGE_BACKUP_KEY } from "@/lib/backup-crypto";
 import { formatBytes, formatLocalTimestamp, backupToCloud, restoreFromCloud, deleteCloudBackup, disableBackupsLocal, STORAGE_LAST_CLOUD_ACTION } from "@/lib/backup";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
+import { reloadSoon } from "@/lib/backup-file";
 
 type Opts = { characters: unknown[]; schoolLangsPerChar: Record<string, unknown>; extrasPerChar: Record<string, unknown>; activeId: string; helpTemplate: string };
 type Dialog = { open: boolean; mode: "backup" | "restore" | "confirm-restore"; resolve?: (v: string | boolean | null) => void };
@@ -69,7 +70,7 @@ export function useBackupActions(params: {
         if ((data as any).ddbLink) try { localStorage.setItem(STORAGE_KEYS.DDB_LINK, (data as any).ddbLink); } catch {}
         const now = new Date(); const msg = `Restored ${cloudSize ? `${formatBytes(cloudSize)} at ` : ""}${formatLocalTimestamp(now)}`;
         setUi((p) => ({ ...p, lastCloudAction: msg })); try { localStorage.setItem(STORAGE_LAST_CLOUD_ACTION, msg); } catch {}
-        setBusy({ status: "Restore complete – reloading", isBusy: false }); setTimeout(() => window.location.reload(), 500);
+        setBusy({ status: "Restore complete – reloading", isBusy: false }); reloadSoon();
       } catch (e: unknown) { const m = String((e as Error)?.message || e); setBusy({ status: m.includes("Wrong PIN") ? m : `Restore failed: ${m.slice(0, 200)}`, isBusy: false }); }
     }
   }, [user.firebase, setUi, setBusy, setDlg, optsRef]);

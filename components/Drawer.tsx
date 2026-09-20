@@ -1,7 +1,9 @@
 "use client";
 import Image from "next/image";
+import { useState, type ChangeEvent } from "react";
 import { useTheme } from "@/lib/useTheme";
 import { formatBytes, formatLocalTimestamp } from "@/lib/backup";
+import { buildExportSnapshot, validateImportSnapshot, applyImportSnapshot, reloadSoon, downloadJson, exportFilename } from "@/lib/backup-file";
 import { DRAWER_WIDTH_MOBILE, DRAWER_WIDTH_DESKTOP } from "@/lib/constants";
 
 type StoredCharacter = {
@@ -71,6 +73,37 @@ export function Drawer({
   setMode,
 }: Props) {
   const theme = useTheme();
+  const [fileMsg, setFileMsg] = useState<string | null>(null);
+
+  const handleExport = () => {
+    try {
+      downloadJson(exportFilename(), buildExportSnapshot());
+      setFileMsg("Export complete.");
+    } catch {
+      setFileMsg("Export failed.");
+    }
+  };
+
+  const handleImportFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(await file.text());
+    } catch {
+      setFileMsg("Import failed: file is not valid JSON.");
+      return;
+    }
+    const res = validateImportSnapshot(parsed);
+    if (!res.ok) {
+      setFileMsg(`Import failed: ${res.error}`);
+      return;
+    }
+    applyImportSnapshot(res.data);
+    reloadSoon();
+    setFileMsg("Import complete – reloading…");
+  };
 
   return (
     <>
@@ -305,6 +338,26 @@ export function Drawer({
               </div>
             )}
             {!backup.ui.backupEnabled && backup.status ? <div className="text-[10px] mt-2 px-1 break-words text-accent-soft">{backup.status}</div> : null}
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-default">
+            <h3 className="text-[11px] uppercase tracking-widest font-semibold mb-2 px-1 text-dim">File backup</h3>
+            <div className="flex gap-1.5">
+              <button
+                onClick={handleExport}
+                className="flex-1 text-[12px] px-3 py-2 rounded-lg border transition-colors font-medium flex items-center justify-center gap-1.5 bg-surface border-default text-primary bg-surface-hover"
+              >
+                ↑ Export
+              </button>
+              <label className="flex-1 text-[12px] px-3 py-2 rounded-lg border transition-colors font-medium flex items-center justify-center gap-1.5 cursor-pointer bg-surface border-default text-primary bg-surface-hover">
+                ↓ Import
+                <input type="file" accept="application/json,.json" className="sr-only" onChange={handleImportFile} aria-label="Import backup file" />
+              </label>
+            </div>
+            <div className="text-[10px] mt-1.5 px-1 leading-snug text-dim">
+              Save your chants to a file, or restore from one. Import replaces everything here.
+            </div>
+            {fileMsg ? <div className="text-[10px] mt-1.5 px-1 break-words text-accent-soft">{fileMsg}</div> : null}
           </div>
         </div>
       </div>

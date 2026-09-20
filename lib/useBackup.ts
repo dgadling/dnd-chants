@@ -6,6 +6,7 @@ import { isAllowedOrigin, STORAGE_BACKUP_ENABLED, STORAGE_LAST_BACKUP, STORAGE_L
 import { useDiscordAuth } from "@/hooks/useDiscordAuth";
 import { useBackupState } from "@/hooks/useBackupState";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
+import { reloadSoon } from "@/lib/backup-file";
 import { useBackupAutoSync } from "@/hooks/useBackupAutoSync";
 import { useBackupActions } from "@/hooks/useBackupActions";
 
@@ -85,7 +86,7 @@ export function useBackup(opts: Opts) {
                       try { localStorage.setItem(STORAGE_LAST_CLOUD_ACTION, msg); } catch {}
                       setBusy({ status: "Restore complete – reloading", isBusy: false });
                       refs.current.pendingPin = null; refs.current.discordState = null;
-                      setTimeout(() => window.location.reload(), 500); return;
+                      reloadSoon(); return;
                     } catch (re: unknown) {
                       const rm = re instanceof Error ? re.message : String(re);
                       setBusy({ status: rm.slice(0, 200), isBusy: false });
