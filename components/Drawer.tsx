@@ -47,6 +47,8 @@ type Props = {
   isLinking: boolean;
   onRefreshClick: () => void;
   backup: any;
+  mode: "lang" | "random";
+  setMode: (m: "lang" | "random") => void;
 };
 
 export function Drawer({
@@ -65,6 +67,8 @@ export function Drawer({
   isLinking,
   onRefreshClick,
   backup,
+  mode,
+  setMode,
 }: Props) {
   const theme = useTheme();
 
@@ -189,6 +193,24 @@ export function Drawer({
           >
             ⚙ Configure help
           </button>
+
+          <div className="mt-4 pt-4 border-t border-default">
+            <h3 className="text-[11px] uppercase tracking-widest font-semibold mb-2 px-1 text-dim">Chant mode</h3>
+            <div className="flex rounded-lg p-1 gap-1 bg-surface">
+              {(["lang", "random"] as const).map((v) => {
+                const active = mode === v;
+                return (
+                  <button
+                    key={v}
+                    onClick={() => setMode(v)}
+                    className={`flex-1 text-[11px] px-2 py-1.5 rounded-md font-medium transition-colors ${active ? "bg-surface border border-default text-primary shadow-sm" : "text-dim bg-surface-hover"}`}
+                  >
+                    {v === "lang" ? "Language" : "Random"}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           <div className="mt-4 pt-4 border-t border-default">
             <h3 className="text-[11px] uppercase tracking-widest font-semibold mb-2 px-1 text-dim">Theme</h3>

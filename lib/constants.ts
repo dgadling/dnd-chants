@@ -9,3 +9,4 @@ export const MAX_ROMAN_LEN = 500;
 export const MAX_BOX_INPUT_LEN = 1000;
 export const MAX_TRANSLATE_INPUT_LEN = 500;
 export const MAX_TRANS_ERROR_LEN_MOBILE = 120;
+export const MAX_MAGIC_WORD_LEN = 200;

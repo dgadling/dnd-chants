@@ -20,12 +20,33 @@ import { ConfirmRestoreDialog } from "@/components/ConfirmRestoreDialog";
 import { PageHeader } from "@/components/PageHeader";
 import { GetStarted, NoSpellsEmpty, NoMatchEmpty } from "@/components/EmptyStates";
 import { SpellList } from "@/components/SpellList";
+import { RandomSpellList } from "@/components/RandomSpellList";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
+import type { MagicWordEntry } from "@/lib/magic-words";
+import { repairRandomWords } from "@/lib/magic-words";
+import { TOME_OF_ADVENTURE } from "@/lib/tables/tome-of-adventure";
 import { MAX_ENGLISH_PHRASE_LEN, MAX_CHANT_BOX_LEN } from "@/lib/constants";
 import { extractCharacterId as extractIdForDisplay } from "@/lib/extractCharacterId";
 
 const DEFAULT_HELP_TEMPLATE =
   "Help me come up with a short chant or idiom for the Dungeons & Dragons spell {spell} in {language} that would sound reasonable to a native speaker.";
+
+type ChantMode = { mode: "lang" | "random"; table: string };
+const DEFAULT_CHANT_MODE: ChantMode = { mode: "lang", table: TOME_OF_ADVENTURE.id };
+
+function parseChantMode(raw: string | null): ChantMode {
+  if (!raw) return DEFAULT_CHANT_MODE;
+  try {
+    const p = JSON.parse(raw);
+    if (p && typeof p === "object") {
+      return {
+        mode: p.mode === "random" ? "random" : "lang",
+        table: typeof p.table === "string" && p.table ? p.table : TOME_OF_ADVENTURE.id,
+      };
+    }
+  } catch {}
+  return DEFAULT_CHANT_MODE;
+}
 
 export default function LabPage() {
   useTheme();
@@ -52,16 +73,26 @@ export default function LabPage() {
     setLinkStatus,
   } = useCharacters();
 
+  const [chantMode, setChantMode] = useState<ChantMode>(DEFAULT_CHANT_MODE);
+  const [randomPerChar, setRandomPerChar] = useState<Record<string, Record<string, MagicWordEntry>>>({});
+
   const filteredGrouped = useMemo(() => {
     const q = filterText.trim().toLowerCase();
     if (!q) return grouped;
     const out: Record<string, typeof spellsArr> = {};
     for (const s of SCHOOLS) {
       const list = grouped[s] || [];
-      out[s] = list.filter((sp: any) => sp.name.toLowerCase().includes(q));
+      out[s] = list.filter((sp: any) => {
+        if (sp.name.toLowerCase().includes(q)) return true;
+        if (chantMode.mode === "random" && activeId) {
+          const w = randomPerChar[activeId]?.[sp.name]?.word;
+          if (w && w.toLowerCase().includes(q)) return true;
+        }
+        return false;
+      });
     }
     return out;
-  }, [grouped, filterText]);
+  }, [grouped, filterText, chantMode.mode, randomPerChar, activeId]);
 
   const hasFilter = filterText.trim().length > 0;
 
@@ -109,14 +140,25 @@ export default function LabPage() {
       }
       const rawHelp = localStorage.getItem(STORAGE_KEYS.HELP_TEMPLATE);
       if (rawHelp && rawHelp.trim()) setHelpTemplate(rawHelp);
+      const mode = parseChantMode(localStorage.getItem(STORAGE_KEYS.CHANT_MODE));
+      setChantMode(mode);
+      const rawRandom = localStorage.getItem(STORAGE_KEYS.RANDOM);
+      if (rawRandom) {
+        try {
+          const parsed = JSON.parse(rawRandom);
+          if (parsed && typeof parsed === "object") setRandomPerChar(repairRandomWords(parsed, mode.table));
+        } catch {}
+      }
     } catch {}
   }, []); // eslint-disable-line
 
   useEffect(() => { try { localStorage.setItem(STORAGE_KEYS.EXTRAS, JSON.stringify(extrasPerChar)); } catch {} }, [extrasPerChar]);
   useEffect(() => { try { localStorage.setItem(STORAGE_KEYS.SCHOOL_LANGS, JSON.stringify(schoolLangsPerChar)); } catch {} }, [schoolLangsPerChar]);
   useEffect(() => { try { if (helpTemplate?.trim()) localStorage.setItem(STORAGE_KEYS.HELP_TEMPLATE, helpTemplate); } catch {} }, [helpTemplate]);
+  useEffect(() => { try { localStorage.setItem(STORAGE_KEYS.CHANT_MODE, JSON.stringify(chantMode)); } catch {} }, [chantMode]);
+  useEffect(() => { try { localStorage.setItem(STORAGE_KEYS.RANDOM, JSON.stringify(randomPerChar)); } catch {} }, [randomPerChar]);
 
-  const backup = useBackup({ characters, schoolLangsPerChar, extrasPerChar, activeId, helpTemplate });
+  const backup = useBackup({ characters, schoolLangsPerChar, extrasPerChar, randomPerChar, activeId, helpTemplate });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -171,6 +213,7 @@ export default function LabPage() {
     setCharacters(newChars);
     setExtrasPerChar((prev) => { const cp = { ...prev }; delete cp[cid]; return cp; });
     setSchoolLangsPerChar((prev) => { const cp = { ...prev }; delete cp[cid]; return cp; });
+    setRandomPerChar((prev) => { const cp = { ...prev }; delete cp[cid]; return cp; });
     if (activeId === cid) {
       if (newChars.length) {
         const next = newChars[Math.min(idx, newChars.length - 1)];
@@ -189,6 +232,10 @@ export default function LabPage() {
   const hasChars = characters.length > 0;
   const activeExtras = activeId ? extrasPerChar[activeId] || {} : {};
   const activeLangs = activeId ? schoolLangsPerChar[activeId] || {} : {};
+  const activeRandom = activeId ? randomPerChar[activeId] || {} : {};
+  const setMode = useCallback((m: "lang" | "random") => {
+    setChantMode((prev) => ({ ...prev, mode: m }));
+  }, []);
   const characterName = activeCharacter?.characterName || "";
   const lastFetchISO = activeCharacter?.lastFetchISO || "";
   const lastModifiedISO = activeCharacter?.lastModifiedISO || null;
@@ -227,6 +274,8 @@ export default function LabPage() {
         isLinking={isLinking}
         onRefreshClick={onRefreshClick}
         backup={backup}
+        mode={chantMode.mode}
+        setMode={setMode}
       />
 
       <div className="flex-1 min-w-0 flex flex-col">
@@ -247,7 +296,7 @@ export default function LabPage() {
         </div>
 
         <main className="flex-1 mx-auto w-full max-w-5xl px-3 py-4 lg:px-6 lg:py-6 pb-10">
-          <PageHeader totalVerbal={totalVerbal} />
+          <PageHeader totalVerbal={totalVerbal} mode={chantMode.mode} />
 
           {totalVerbal > 0 && (
             <div className="sticky top-[52px] lg:top-0 z-10 -mx-3 lg:mx-0 px-3 lg:px-0 py-2 mb-3 backdrop-blur bg-app/80 border-b lg:border-0 border-default">
@@ -261,6 +310,19 @@ export default function LabPage() {
               return hasChars ? <NoSpellsEmpty /> : <GetStarted onAddCharacter={() => { setDrawerOpen(true); setShowAddCharacter(true); }} />;
             }
             if (noMatch) return <NoMatchEmpty filterText={filterText} clearFilter={clearFilter} />;
+            if (chantMode.mode === "random") {
+              return (
+                <RandomSpellList
+                  filteredGrouped={filteredGrouped}
+                  grouped={grouped}
+                  hasFilter={hasFilter}
+                  activeId={activeId}
+                  activeRandom={activeRandom}
+                  setRandomPerChar={setRandomPerChar}
+                  tableId={chantMode.table}
+                />
+              );
+            }
             return (
               <SpellList
                 filteredGrouped={filteredGrouped}
