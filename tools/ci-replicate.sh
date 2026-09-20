@@ -13,6 +13,8 @@ echo "=== bun install --frozen-lockfile ==="
 bun install --frozen-lockfile
 echo "=== bun run lint (CI=true) ==="
 CI=true bun run lint
+echo "=== bun run test (CI=true) ==="
+CI=true bun run test
 echo "=== bun run build (CI=true) ==="
 CI=true bun run build
 echo "=== CI Replicate PASSED ==="
