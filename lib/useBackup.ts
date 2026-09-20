@@ -9,7 +9,7 @@ import { STORAGE_KEYS } from "@/lib/storage-keys";
 import { useBackupAutoSync } from "@/hooks/useBackupAutoSync";
 import { useBackupActions } from "@/hooks/useBackupActions";
 
-type Opts = { characters: unknown[]; schoolLangsPerChar: Record<string, unknown>; extrasPerChar: Record<string, unknown>; activeId: string; helpTemplate: string };
+type Opts = { characters: unknown[]; schoolLangsPerChar: Record<string, unknown>; extrasPerChar: Record<string, unknown>; randomPerChar: Record<string, unknown>; activeId: string; helpTemplate: string };
 type Dialog = { open: boolean; mode: "backup" | "restore" | "confirm-restore"; resolve?: (v: string | boolean | null) => void };
 type BackupUi = {
   showEnableBackups: boolean;
@@ -76,6 +76,7 @@ export function useBackup(opts: Opts) {
                       if (Array.isArray((restoredData as any).characters)) localStorage.setItem(STORAGE_KEYS.CHARACTERS, JSON.stringify((restoredData as any).characters));
                       if ((restoredData as any).schoolLangsPerChar) localStorage.setItem(STORAGE_KEYS.SCHOOL_LANGS, JSON.stringify((restoredData as any).schoolLangsPerChar));
                       if ((restoredData as any).extrasPerChar) localStorage.setItem(STORAGE_KEYS.EXTRAS, JSON.stringify((restoredData as any).extrasPerChar));
+                      if ((restoredData as any).randomPerChar) localStorage.setItem(STORAGE_KEYS.RANDOM, JSON.stringify((restoredData as any).randomPerChar));
                       if (typeof (restoredData as any).activeId === "string") localStorage.setItem(STORAGE_KEYS.ACTIVE_ID, (restoredData as any).activeId);
                       if (typeof (restoredData as any).helpTemplate === "string") localStorage.setItem(STORAGE_KEYS.HELP_TEMPLATE, (restoredData as any).helpTemplate);
                       if ((restoredData as any).ddbLink) try { localStorage.setItem(STORAGE_KEYS.DDB_LINK, (restoredData as any).ddbLink); } catch {}
