@@ -7,8 +7,10 @@ export const STORAGE_KEYS = {
   // Per-character data
   SCHOOL_LANGS: "dnd-chant-school-langs-v1",
   EXTRAS: "dnd-chant-extras-v1",
+  RANDOM: "dnd-chant-random",
 
   // UI / preferences
+  CHANT_MODE: "dnd-chant-mode-v1",
   HELP_TEMPLATE: "dnd-chant-help-template-v1",
   THEME: "dnd-chant-theme-v1",
   WELCOME: "dnd-chant-welcome-seen-v1",

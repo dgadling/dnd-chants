@@ -22,6 +22,17 @@ export const SCHOOL_DEFAULTS: Record<School, string> = {
   Transmutation: "de",
 };
 
+export const SCHOOL_DESCS: Record<string, string> = {
+  Abjuration: "Protecting stuff",
+  Conjuration: "Making stuff",
+  Divination: "Knowing stuff",
+  Enchantment: "Convincing stuff",
+  Evocation: "Making energy stuff",
+  Illusion: "Tricking stuff",
+  Necromancy: "Dead stuff",
+  Transmutation: "Changing stuff",
+};
+
 export const LANG_OPTIONS: { code: string; label: string }[] = [
   { code: "af", label: "Afrikaans" },
   { code: "sq", label: "Albanian" },

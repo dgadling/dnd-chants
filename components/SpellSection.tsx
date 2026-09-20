@@ -1,22 +1,11 @@
 "use client";
-import { LANG_OPTIONS, getLangOptionDisplay, parseBox, formatBox } from "@/lib/lang";
+import { LANG_OPTIONS, getLangOptionDisplay, parseBox, formatBox, SCHOOL_DESCS } from "@/lib/lang";
 import type { School } from "@/lib/lang";
 import { DesktopRow } from "@/components/DesktopRow";
 import { MobileCard } from "@/components/MobileCard";
 
 type Spell = { name: string; school: string };
 type RowExtra = { englishPhrase: string; box: string };
-
-const SCHOOL_DESCS: Record<string, string> = {
-  Abjuration: "Protecting stuff",
-  Conjuration: "Making stuff",
-  Divination: "Knowing stuff",
-  Enchantment: "Convincing stuff",
-  Evocation: "Making energy stuff",
-  Illusion: "Tricking stuff",
-  Necromancy: "Dead stuff",
-  Transmutation: "Changing stuff",
-};
 
 type Props = {
   activeSchool: School;
