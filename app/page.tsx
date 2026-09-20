@@ -24,29 +24,13 @@ import { RandomSpellList } from "@/components/RandomSpellList";
 import { STORAGE_KEYS } from "@/lib/storage-keys";
 import type { MagicWordEntry } from "@/lib/magic-words";
 import { repairRandomWords } from "@/lib/magic-words";
-import { TOME_OF_ADVENTURE } from "@/lib/tables/tome-of-adventure";
+import { parseChantMode, DEFAULT_CHANT_MODE } from "@/lib/chant-mode";
+import type { ChantMode } from "@/lib/chant-mode";
 import { MAX_ENGLISH_PHRASE_LEN, MAX_CHANT_BOX_LEN } from "@/lib/constants";
 import { extractCharacterId as extractIdForDisplay } from "@/lib/extractCharacterId";
 
 const DEFAULT_HELP_TEMPLATE =
   "Help me come up with a short chant or idiom for the Dungeons & Dragons spell {spell} in {language} that would sound reasonable to a native speaker.";
-
-type ChantMode = { mode: "lang" | "random"; table: string };
-const DEFAULT_CHANT_MODE: ChantMode = { mode: "lang", table: TOME_OF_ADVENTURE.id };
-
-function parseChantMode(raw: string | null): ChantMode {
-  if (!raw) return DEFAULT_CHANT_MODE;
-  try {
-    const p = JSON.parse(raw);
-    if (p && typeof p === "object") {
-      return {
-        mode: p.mode === "random" ? "random" : "lang",
-        table: typeof p.table === "string" && p.table ? p.table : TOME_OF_ADVENTURE.id,
-      };
-    }
-  } catch {}
-  return DEFAULT_CHANT_MODE;
-}
 
 export default function LabPage() {
   useTheme();
